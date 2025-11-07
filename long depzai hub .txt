@@ -1,0 +1,181 @@
+--// 🖤 LongDepzai Hub (Fluent Dark UI)
+--// Phiên bản hợp pháp, giao diện Fluent màu đen, 3 tab: Farm Lv / PvP / Boss
+--// Không chứa loadstring, bạn tự dán khi dùng.
+
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/main/source.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "🖤 LongDepzai Hub",
+    SubTitle = "by LongDepzai | Fluent Dark Theme",
+    TabWidth = 130,
+    Size = UDim2.fromOffset(620, 430),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+-- 🌙 Nút mở menu bằng ảnh
+local player = game:GetService("Players").LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "LongDepzaiMenu"
+local btn = Instance.new("ImageButton", gui)
+btn.Size = UDim2.new(0, 55, 0, 55)
+btn.Position = UDim2.new(0.05, 0, 0.2, 0)
+btn.Image = "rbxassetid://79809536246322"
+btn.BackgroundTransparency = 1
+btn.MouseButton1Click:Connect(function()
+    Fluent:ToggleUI()
+end)
+
+-- 🧭 Tabs
+local TabFarm = Window:AddTab({ Title = "Farm Lv", Icon = "sword" })
+local TabPvP = Window:AddTab({ Title = "PvP", Icon = "target" })
+local TabBoss = Window:AddTab({ Title = "Boss", Icon = "crown" })
+
+-- ⚙️ Biến trạng thái
+local FarmLvOn = false
+local FarmMoneyOn = false
+local PvPRotateOn = false
+local PvPAttackOn = false
+local BossFarmOn = false
+local Stats = { Money = 0, Time = 0, BossHP = 100 }
+
+------------------------------
+-- 🌾 TAB 1: FARM LV + FARM TIỀN
+------------------------------
+
+TabFarm:AddToggle("FarmLv", {
+    Title = "🚀 Farm Level",
+    Default = false,
+    Callback = function(v)
+        FarmLvOn = v
+        if v then
+            Fluent:Notify({Title="Farm Level", Content="Đang mô phỏng farm level...", Duration=3})
+            task.spawn(function()
+                while FarmLvOn do
+                    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.CFrame *= CFrame.new(0, 2, 0)
+                    end
+                    task.wait(1)
+                end
+            end)
+        else
+            Fluent:Notify({Title="Farm Level", Content="Đã tắt farm level", Duration=3})
+        end
+    end
+})
+
+TabFarm:AddToggle("FarmMoney", {
+    Title = "💰 Farm Tiền",
+    Default = false,
+    Callback = function(v)
+        FarmMoneyOn = v
+        if v then
+            Fluent:Notify({Title="Farm Tiền", Content="Bắt đầu đếm thời gian farm (mô phỏng)", Duration=3})
+            Stats.Money = 0
+            Stats.Time = 0
+            task.spawn(function()
+                while FarmMoneyOn do
+                    Stats.Money += math.random(10, 50)
+                    Stats.Time += 1
+                    task.wait(1)
+                end
+            end)
+        else
+            Fluent:Notify({Title="Farm Tiền", Content="Ngừng farm tiền", Duration=3})
+        end
+    end
+})
+
+TabFarm:AddParagraph({
+    Title = "📊 Thống kê Farm",
+    Content = "Tiền và thời gian chỉ hiển thị mô phỏng.\nKhông can thiệp gameplay."
+})
+
+------------------------------
+-- ⚔️ TAB 2: PVP
+------------------------------
+
+TabPvP:AddToggle("PvPRotate", {
+    Title = "🔄 Xoay 360°",
+    Default = false,
+    Callback = function(v)
+        PvPRotateOn = v
+        if v then
+            Fluent:Notify({Title="PvP", Content="Đang xoay 360° (mô phỏng)", Duration=3})
+            task.spawn(function()
+                while PvPRotateOn do
+                    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.CFrame *= CFrame.Angles(0, math.rad(30), 0)
+                    end
+                    task.wait(0.1)
+                end
+            end)
+        else
+            Fluent:Notify({Title="PvP", Content="Ngừng xoay", Duration=3})
+        end
+    end
+})
+
+TabPvP:AddToggle("PvPAttack", {
+    Title = "⚔️ Spam Đánh",
+    Default = false,
+    Callback = function(v)
+        PvPAttackOn = v
+        if v then
+            Fluent:Notify({Title="PvP", Content="Bật spam đánh (mô phỏng)", Duration=3})
+            task.spawn(function()
+                while PvPAttackOn do
+                    print("[LongDepzai PvP] Đánh mô phỏng")
+                    task.wait(0.6)
+                end
+            end)
+        else
+            Fluent:Notify({Title="PvP", Content="Tắt spam đánh", Duration=3})
+        end
+    end
+})
+
+------------------------------
+-- 👑 TAB 3: FARM BOSS
+------------------------------
+
+TabBoss:AddToggle("BossFarm", {
+    Title = "👑 Farm Boss",
+    Default = false,
+    Callback = function(v)
+        BossFarmOn = v
+        if v then
+            Stats.BossHP = 100
+            Fluent:Notify({Title="Boss", Content="Đang đánh boss (mô phỏng)", Duration=3})
+            task.spawn(function()
+                while BossFarmOn and Stats.BossHP > 0 do
+                    Stats.BossHP -= math.random(5, 10)
+                    task.wait(1)
+                end
+                if Stats.BossHP <= 0 then
+                    Fluent:Notify({Title="Boss", Content="Boss đã bị hạ gục!", Duration=4})
+                end
+            end)
+        else
+            Fluent:Notify({Title="Boss", Content="Ngừng farm boss", Duration=3})
+        end
+    end
+})
+
+TabBoss:AddParagraph({
+    Title = "❤️ Thanh máu Boss",
+    Content = "HP boss giảm dần (mô phỏng)"
+})
+
+------------------------------
+-- 🔔 Thông báo khởi động
+------------------------------
+
+Fluent:Notify({
+    Title = "LongDepzai Hub",
+    Content = "Fluent Dark UI khởi động thành công!\nNhấn LeftControl hoặc nút ảnh để mở menu.",
+    Duration = 5
+})
