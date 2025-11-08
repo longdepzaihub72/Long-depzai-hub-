@@ -1,0 +1,459 @@
+-- LongDepzai Hub - Rayfield (Final) - Client-side simulation
+-- ===== Config =====
+local OPEN_BUTTON_IMAGE = "rbxassetid://79809536246322" -- ảnh nút mở menu bạn cung cấp
+local LOCAL_BOSS_NAME = "BOSS"
+local LOCAL_BOSS_MAX_HP = 5000
+local LOCAL_MONEY_CAP = 1000000000000 -- 1 nghìn tỷ
+
+-- ===== Services & helpers =====
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local function Character() return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait() end
+
+local function tryLoadRayfield()
+    local ok, lib = pcall(function()
+        return loadstring(game:HttpGet('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua'))()
+    end)
+    if ok and lib then return lib end
+    return nil
+end
+
+local Rayfield = tryLoadRayfield()
+if not Rayfield then
+    error("Rayfield không load được. Hãy chạy trên executor cho phép HttpGet.")
+end
+
+-- ===== Open Button (ảnh) =====
+do
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "LongDepzai_OpenGui"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = game:GetService("CoreGui")
+
+    local openBtn = Instance.new("ImageButton")
+    openBtn.Name = "LongDepzaiOpenButton"
+    openBtn.Parent = screenGui
+    openBtn.Size = UDim2.new(0, 68, 0, 68)
+    openBtn.Position = UDim2.new(0, 20, 0.5, -34)
+    openBtn.BackgroundColor3 = Color3.fromRGB(20,20,20)
+    openBtn.BackgroundTransparency = 0.15
+    openBtn.BorderSizePixel = 0
+    openBtn.Image = OPEN_BUTTON_IMAGE
+    openBtn.ScaleType = Enum.ScaleType.Fit
+    openBtn.AutoButtonColor = true
+    openBtn.ZIndex = 10
+
+    openBtn.MouseEnter:Connect(function() openBtn.BackgroundTransparency = 0.05 end)
+    openBtn.MouseLeave:Connect(function() openBtn.BackgroundTransparency = 0.15 end)
+
+    openBtn.MouseButton1Click:Connect(function()
+        Rayfield:ToggleUI()
+    end)
+end
+
+-- ===== State & local resources =====
+local state = {
+    farmLV = false,
+    farmMoney = false,
+    spin360 = false,
+    spamAttack = false,
+    farmBoss = false,
+    god = false,
+    fakeMoney = false,
+    heal = false,
+    fly = false
+}
+local localMoney = 0
+
+-- ===== Rayfield Window & Tabs =====
+local Window = Rayfield:CreateWindow({
+    Name = "Long Depzai Hub",
+    LoadingTitle = "Long Depzai Hub",
+    LoadingSubtitle = "All Client (Local)",
+    ConfigurationSaving = { Enabled = true, FolderName = "LongDepzaiHub", FileName = "Config" },
+    Theme = "Dark"
+})
+
+local Tabs = {}
+-- Tab 1: Farm
+Tabs.Farm = Window:CreateTab("⚙️ Farm")
+Tabs.Farm:CreateToggle({
+    Name = "Farm LV (teleport lên đầu quái & spam đánh)",
+    CurrentValue = false,
+    Flag = "FarmLV",
+    Callback = function(val) state.farmLV = val end
+})
+Tabs.Farm:CreateToggle({
+    Name = "Farm Tiền (Auto work, local)",
+    CurrentValue = false,
+    Flag = "FarmMoney",
+    Callback = function(val) state.farmMoney = val end
+})
+
+-- Tab 2: PvP
+Tabs.PvP = Window:CreateTab("⚔️ PvP")
+Tabs.PvP:CreateToggle({
+    Name = "Xoay 360°",
+    CurrentValue = false,
+    Flag = "Spin360",
+    Callback = function(val) state.spin360 = val end
+})
+Tabs.PvP:CreateToggle({
+    Name = "Spam đánh (Auto click)",
+    CurrentValue = false,
+    Flag = "SpamAttack",
+    Callback = function(val) state.spamAttack = val end
+})
+
+-- Tab 3: Boss & Utils
+Tabs.Boss = Window:CreateTab("🐉 Boss & Utils")
+Tabs.Boss:CreateToggle({
+    Name = "Farm Boss (bay vòng quanh & spam đánh)",
+    CurrentValue = false,
+    Flag = "FarmBoss",
+    Callback = function(val) state.farmBoss = val end
+})
+Tabs.Boss:CreateToggle({
+    Name = "Bất tử (Client-side God)",
+    CurrentValue = false,
+    Flag = "GodMode",
+    Callback = function(val) state.god = val end
+})
+Tabs.Boss:CreateToggle({
+    Name = "Tiền ảo (tăng local tới 1 nghìn tỷ)",
+    CurrentValue = false,
+    Flag = "FakeMoney",
+    Callback = function(val) state.fakeMoney = val end
+})
+Tabs.Boss:CreateToggle({
+    Name = "Hồi Máu (+60 mỗi 2s)",
+    CurrentValue = false,
+    Flag = "Heal",
+    Callback = function(val) state.heal = val end
+})
+Tabs.Boss:CreateToggle({
+    Name = "Bay (Fly GUI v3 simple)",
+    CurrentValue = false,
+    Flag = "Fly",
+    Callback = function(val) state.fly = val end
+})
+
+Tabs.Boss:CreateLabel("") -- spacer
+Tabs.Boss:CreateLabel("Boss: " .. LOCAL_BOSS_NAME)
+local bossHPLabel = Tabs.Boss:CreateLabel("HP: " .. tostring(LOCAL_BOSS_MAX_HP) .. "/" .. tostring(LOCAL_BOSS_MAX_HP))
+local moneyLabel = Tabs.Farm:CreateLabel("Local Money: 0")
+
+-- ===== Create local boss (name red, HP 5000) =====
+local function createLocalBossIfMissing()
+    -- prefer existing "Boss" model in workspace if present and has Humanoid
+    if workspace:FindFirstChild("Boss") and workspace.Boss:FindFirstChildWhichIsA("Humanoid") then
+        return workspace.Boss
+    end
+    if workspace:FindFirstChild("LD_LocalBoss") and workspace.LD_LocalBoss:FindFirstChildWhichIsA("Humanoid") then
+        return workspace.LD_LocalBoss
+    end
+
+    local bossModel = Instance.new("Model")
+    bossModel.Name = "LD_LocalBoss"
+    bossModel.Parent = workspace
+
+    local rootPart = Instance.new("Part")
+    rootPart.Name = "HumanoidRootPart"
+    rootPart.Size = Vector3.new(4,4,4)
+    rootPart.Position = (Character() and Character():FindFirstChild("HumanoidRootPart") and Character().HumanoidRootPart.Position + Vector3.new(0,0,-15)) or Vector3.new(0,5,0)
+    rootPart.Anchored = false
+    rootPart.Parent = bossModel
+
+    local head = Instance.new("Part")
+    head.Name = "Head"
+    head.Size = Vector3.new(2,2,2)
+    head.Position = rootPart.Position + Vector3.new(0,3,0)
+    head.Parent = bossModel
+    head.CanCollide = false
+
+    local mesh = Instance.new("SpecialMesh", head)
+    mesh.MeshType = Enum.MeshType.Sphere
+
+    local humanoid = Instance.new("Humanoid")
+    humanoid.Name = "Humanoid"
+    humanoid.MaxHealth = LOCAL_BOSS_MAX_HP
+    humanoid.Health = LOCAL_BOSS_MAX_HP
+    humanoid.Parent = bossModel
+
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = head
+    weld.Part1 = rootPart
+    weld.Parent = rootPart
+
+    -- Billboard with name (red) + HP bar
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "LD_BossBillboard"
+    billboard.Size = UDim2.new(0,220,0,80)
+    billboard.AlwaysOnTop = true
+    billboard.Adornee = head
+    billboard.Parent = head
+
+    local frame = Instance.new("Frame", billboard)
+    frame.Size = UDim2.new(1,0,1,0)
+    frame.BackgroundTransparency = 0.4
+    frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+    frame.BorderSizePixel = 0
+
+    -- Name label (red)
+    local nameLbl = Instance.new("TextLabel", frame)
+    nameLbl.Size = UDim2.new(0,150,0,24)
+    nameLbl.Position = UDim2.new(0,8,0,6)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Text = LOCAL_BOSS_NAME
+    nameLbl.TextColor3 = Color3.fromRGB(255,50,50) -- đỏ
+    nameLbl.Font = Enum.Font.SourceSansBold
+    nameLbl.TextScaled = true
+
+    -- HP bar background
+    local hpBarBg = Instance.new("Frame", frame)
+    hpBarBg.Size = UDim2.new(0,200,0,14)
+    hpBarBg.Position = UDim2.new(0,8,0,38)
+    hpBarBg.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    hpBarBg.BorderSizePixel = 0
+
+    local hpBar = Instance.new("Frame", hpBarBg)
+    hpBar.Name = "HPFill"
+    hpBar.Size = UDim2.new(1,0,1,0)
+    hpBar.BackgroundColor3 = Color3.fromRGB(200,30,30)
+    hpBar.BorderSizePixel = 0
+
+    return bossModel
+end
+
+createLocalBossIfMissing()
+
+-- ===== Utilities =====
+local function getBossModel()
+    if workspace:FindFirstChild("Boss") and workspace.Boss:FindFirstChildWhichIsA("Humanoid") then
+        return workspace.Boss
+    end
+    if workspace:FindFirstChild("LD_LocalBoss") and workspace.LD_LocalBoss:FindFirstChildWhichIsA("Humanoid") then
+        return workspace.LD_LocalBoss
+    end
+    return createLocalBossIfMissing()
+end
+
+local function getClosestEnemy()
+    local best, bestDist = nil, math.huge
+    local root = Character():FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") and obj ~= Character() then
+            local owner = Players:GetPlayerFromCharacter(obj)
+            if not owner then
+                local d = (obj.HumanoidRootPart.Position - root.Position).Magnitude
+                if d < bestDist then bestDist = d; best = obj end
+            end
+        end
+    end
+    return best
+end
+
+-- ===== Behavior loops =====
+
+-- Farm LV (teleport above enemy head & spam attack)
+spawn(function()
+    while true do
+        if state.farmLV then
+            local char = Character()
+            local root = char:FindFirstChild("HumanoidRootPart")
+            local enemy = getClosestEnemy()
+            if root and enemy and enemy:FindFirstChild("HumanoidRootPart") then
+                pcall(function()
+                    root.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 6, 0)
+                    root.CFrame = root.CFrame * CFrame.Angles(math.rad(-25), 0, 0)
+                end)
+                for i = 1, 6 do
+                    pcall(function() VirtualUser:CaptureController(); VirtualUser:ClickButton1(Vector2.new()) end)
+                end
+            end
+        end
+        task.wait(0.25)
+    end
+end)
+
+-- Farm Money (move to WorkSpot if exists + increase local money)
+spawn(function()
+    while true do
+        if state.farmMoney then
+            if workspace:FindFirstChild("WorkSpot") and Character():FindFirstChild("HumanoidRootPart") then
+                pcall(function() Character().HumanoidRootPart.CFrame = workspace.WorkSpot.CFrame + Vector3.new(0,3,0) end)
+            end
+            localMoney = math.min(LOCAL_MONEY_CAP, localMoney + math.random(50,200))
+            moneyLabel:Set("Local Money: " .. tostring(localMoney))
+        end
+        task.wait(10)
+    end
+end)
+
+-- Spin 360
+spawn(function()
+    while true do
+        if state.spin360 then
+            local root = Character():FindFirstChild("HumanoidRootPart")
+            if root then root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(25), 0) end
+        end
+        task.wait(0.05)
+    end
+end)
+
+-- Spam attack
+spawn(function()
+    while true do
+        if state.spamAttack then
+            pcall(function() VirtualUser:CaptureController(); VirtualUser:ClickButton1(Vector2.new()) end)
+        end
+        task.wait(0.08)
+    end
+end)
+
+-- Farm Boss: circle fast around boss & spam attack; reduce boss HP locally
+spawn(function()
+    local angle = 0
+    while true do
+        if state.farmBoss then
+            local boss = getBossModel()
+            local char = Character()
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if boss and boss:FindFirstChild("HumanoidRootPart") and root and boss:FindFirstChildWhichIsA("Humanoid") then
+                angle = angle + math.rad(60) -- faster spin
+                local center = boss.HumanoidRootPart.Position
+                local radius = 8
+                local offset = Vector3.new(math.cos(angle)*radius, 6, math.sin(angle)*radius)
+                pcall(function() root.CFrame = CFrame.new(center + offset, center) end)
+                for i=1,6 do pcall(function() VirtualUser:CaptureController(); VirtualUser:ClickButton1(Vector2.new()) end) end
+                -- simulate damage locally to boss
+                pcall(function()
+                    local h = boss:FindFirstChildWhichIsA("Humanoid")
+                    if h and h.Health > 0 then
+                        h.Health = math.max(0, h.Health - 40) -- damage per tick
+                    end
+                end)
+            end
+        end
+
+        -- update boss HP label and billboard fill
+        local bossModel = getBossModel()
+        if bossModel and bossModel:FindFirstChildWhichIsA("Humanoid") then
+            local hum = bossModel:FindFirstChildWhichIsA("Humanoid")
+            local hp = math.max(0, math.floor(hum.Health))
+            bossHPLabel:Set("HP: " .. tostring(hp) .. "/" .. tostring(hum.MaxHealth))
+            -- update billboard HP fill if present
+            local head = bossModel:FindFirstChild("Head")
+            if head then
+                local bb = head:FindFirstChild("LD_BossBillboard")
+                if bb and bb:FindFirstChildWhichIsA("Frame") then
+                    local frame = bb:FindFirstChildWhichIsA("Frame")
+                    local hpFill = frame:FindFirstChild("HPFill")
+                    if hpFill and hum.MaxHealth > 0 then
+                        local pct = hum.Health / hum.MaxHealth
+                        hpFill.Size = UDim2.new(math.clamp(pct,0,1),0,1,0)
+                    end
+                end
+            end
+        end
+
+        task.wait(0.08)
+    end
+end)
+
+-- God mode (client-side)
+spawn(function()
+    while true do
+        if state.god then
+            local hum = Character():FindFirstChildWhichIsA("Humanoid")
+            if hum then pcall(function() hum.Health = hum.MaxHealth; hum.MaxHealth = math.max(hum.MaxHealth, 1e6) end) end
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- Fake money (ramp up)
+spawn(function()
+    while true do
+        if state.fakeMoney then
+            localMoney = math.min(LOCAL_MONEY_CAP, localMoney + math.floor(LOCAL_MONEY_CAP/180))
+            moneyLabel:Set("Local Money: " .. tostring(localMoney))
+        end
+        task.wait(1)
+    end
+end)
+
+-- Heal (+60 every 2s)
+spawn(function()
+    while true do
+        if state.heal then
+            local hum = Character():FindFirstChildWhichIsA("Humanoid")
+            if hum then pcall(function() hum.Health = math.min(hum.MaxHealth, hum.Health + 60) end) end
+            task.wait(2)
+        else
+            task.wait(0.5)
+        end
+    end
+end)
+
+-- Fly (BodyVelocity simple)
+local flyData = {bv = nil, speed = 120}
+local keys = {W=false, A=false, S=false, D=false, Up=false, Down=false}
+UserInputService.InputBegan:Connect(function(i,gp)
+    if gp then return end
+    if i.KeyCode == Enum.KeyCode.W then keys.W=true end
+    if i.KeyCode == Enum.KeyCode.S then keys.S=true end
+    if i.KeyCode == Enum.KeyCode.A then keys.A=true end
+    if i.KeyCode == Enum.KeyCode.D then keys.D=true end
+    if i.KeyCode == Enum.KeyCode.Space then keys.Up=true end
+    if i.KeyCode == Enum.KeyCode.LeftControl then keys.Down=true end
+end)
+UserInputService.InputEnded:Connect(function(i,gp)
+    if gp then return end
+    if i.KeyCode == Enum.KeyCode.W then keys.W=false end
+    if i.KeyCode == Enum.KeyCode.S then keys.S=false end
+    if i.KeyCode == Enum.KeyCode.A then keys.A=false end
+    if i.KeyCode == Enum.KeyCode.D then keys.D=false end
+    if i.KeyCode == Enum.KeyCode.Space then keys.Up=false end
+    if i.KeyCode == Enum.KeyCode.LeftControl then keys.Down=false end
+end)
+
+spawn(function()
+    while true do
+        if state.fly then
+            local char = Character()
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if root then
+                if not flyData.bv then
+                    local bv = Instance.new("BodyVelocity")
+                    bv.MaxForce = Vector3.new(1e5,1e5,1e5)
+                    bv.Velocity = Vector3.new(0,0,0)
+                    bv.Parent = root
+                    flyData.bv = bv
+                end
+                local move = Vector3.new()
+                local look = root.CFrame.LookVector
+                local right = root.CFrame.RightVector
+                if keys.W then move = move + look end
+                if keys.S then move = move - look end
+                if keys.A then move = move - right end
+                if keys.D then move = move + right end
+                if keys.Up then move = move + Vector3.new(0,1,0) end
+                if keys.Down then move = move - Vector3.new(0,1,0) end
+                if move.Magnitude > 0 then flyData.bv.Velocity = move.Unit * flyData.speed else flyData.bv.Velocity = Vector3.new(0,0,0) end
+            end
+        else
+            if flyData.bv then pcall(function() flyData.bv:Destroy() end); flyData.bv = nil end
+        end
+        task.wait(0.05)
+    end
+end)
+
+-- ===== Initial notification =====
+Rayfield:Notify({Title="LongDepzai Hub", Content="Rayfield UI loaded. Boss: " .. LOCAL_BOSS_NAME .. " (HP " .. LOCAL_BOSS_MAX_HP .. ")", Duration=4})
+
+-- End of script
