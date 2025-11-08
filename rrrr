@@ -1,0 +1,238 @@
+--[[
+    🌸 Longdepzai | City Lor Hub
+    Giao diện Fluent trắng - hồng nhạt, viền cầu vồng 7 màu
+    Tác giả: Longdepzai
+--]]
+
+-- Nạp thư viện Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Cấu hình cửa sổ chính
+local Window = Rayfield:CreateWindow({
+    Name = "Longdepzai | City Lor 🌸",
+    LoadingTitle = "Đang khởi động menu...",
+    LoadingSubtitle = "By Longdepzai",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "LongdepzaiHub",
+        FileName = "CityLorHub"
+    },
+    KeySystem = false
+})
+
+-- 🌈 Viền 7 màu xoay liên tục
+task.spawn(function()
+    local colors = {"#ff0000","#ff7f00","#ffff00","#00ff00","#0000ff","#4b0082","#8f00ff"}
+    while task.wait(0.25) do
+        for _,v in pairs(colors) do
+            Window:SetTheme({
+                Background = "#ffffff",
+                Topbar = "#ffe6f0",
+                Border = v,
+                TextColor = "#ff66aa"
+            })
+            task.wait(0.25)
+        end
+    end
+end)
+
+-- 🔘 Nút mở menu có ảnh
+Rayfield:LoadImage("OpenButton", "https://www.roblox.com/asset/?id=79809536246322")
+
+-- 🌸 Thanh tiêu đề trên cùng
+game.StarterGui:SetCore("ChatMakeSystemMessage", {
+    Text = "🌸 Longdepzai | City Lor Hub đã bật 🌸",
+    Color = Color3.fromRGB(255,150,180)
+})
+
+------------------------------------------
+-- TAB 1: FRAM BOSS ⚔️
+------------------------------------------
+local Tab1 = Window:CreateTab("Fram Boss ⚔️")
+
+Tab1:CreateToggle({
+    Name = "Fram Boss (Tự động đánh boss)",
+    CurrentValue = false,
+    Callback = function(Value)
+        _G.FramBoss = Value
+        while _G.FramBoss do
+            task.wait()
+            local boss = workspace:FindFirstChild("Boss")
+            if boss and boss:FindFirstChild("HumanoidRootPart") then
+                local plr = game.Players.LocalPlayer
+                local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.CFrame = boss.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
+                    -- bay vòng tròn
+                    for i=1,3 do
+                        hrp.CFrame = hrp.CFrame * CFrame.Angles(0,math.rad(120),0)
+                        task.wait(0.1)
+                    end
+                    game:GetService("VirtualUser"):ClickButton1(Vector2.new())
+                end
+            end
+        end
+    end
+})
+
+Tab1:CreateDropdown({
+    Name = "Chọn Vũ Khí",
+    Options = {"Bá vương kích", "Phật", "Bạch long", "Hắc long", "Võ đang kiếm pháp"},
+    CurrentOption = "Bá vương kích",
+    Callback = function(Option)
+        _G.VuKhi = Option
+        Rayfield:Notify({
+            Title = "Vũ khí đã chọn",
+            Content = Option,
+            Duration = 3
+        })
+    end
+})
+
+Tab1:CreateToggle({
+    Name = "Giao hàng 📦 (Auto Delivery)",
+    CurrentValue = false,
+    Callback = function(Value)
+        _G.GiaoHang = Value
+        while _G.GiaoHang do
+            task.wait(1)
+            local hang = workspace:FindFirstChild("Hang")
+            local diem = workspace:FindFirstChild("DiemGiao")
+            local hrp = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hang and diem and hrp then
+                hrp.CFrame = hang.CFrame
+                task.wait(1)
+                hrp.CFrame = diem.CFrame
+            end
+        end
+    end
+})
+
+------------------------------------------
+-- TAB 2: PVP ⚡
+------------------------------------------
+local Tab2 = Window:CreateTab("PvP ⚡")
+
+Tab2:CreateToggle({
+    Name = "Xoay 360 độ (Siêu tốc)",
+    CurrentValue = false,
+    Callback = function(Value)
+        _G.Xoay = Value
+        while _G.Xoay do
+            task.wait()
+            local hrp = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(50), 0)
+            end
+        end
+    end
+})
+
+Tab2:CreateToggle({
+    Name = "Spam đánh (Liên tục)",
+    CurrentValue = false,
+    Callback = function(Value)
+        _G.Spam = Value
+        while _G.Spam do
+            task.wait(0.1)
+            game:GetService("VirtualUser"):ClickButton1(Vector2.new())
+        end
+    end
+})
+
+Tab2:CreateSlider({
+    Name = "Hitbox (Phạm vi dame)",
+    Range = {1,100},
+    Increment = 1,
+    CurrentValue = 10,
+    Callback = function(Value)
+        _G.Hitbox = Value
+        Rayfield:Notify({
+            Title = "Hitbox",
+            Content = "Phạm vi: "..Value,
+            Duration = 2
+        })
+    end
+})
+
+------------------------------------------
+-- TAB 3: AIMBOT 🎯
+------------------------------------------
+local Tab3 = Window:CreateTab("Aimbot 🎯")
+
+Tab3:CreateToggle({
+    Name = "Aimbot (Theo mục tiêu gần nhất)",
+    CurrentValue = false,
+    Callback = function(Value)
+        _G.Aimbot = Value
+        while _G.Aimbot do
+            task.wait(0.05)
+            local cam = workspace.CurrentCamera
+            local players = game.Players:GetPlayers()
+            local target = nil
+            local shortest = math.huge
+            for _,p in pairs(players) do
+                if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local dist = (cam.CFrame.Position - p.Character.HumanoidRootPart.Position).magnitude
+                    if dist < shortest then
+                        shortest = dist
+                        target = p
+                    end
+                end
+            end
+            if target then
+                cam.CFrame = CFrame.new(cam.CFrame.Position, target.Character.HumanoidRootPart.Position)
+            end
+        end
+    end
+})
+
+------------------------------------------
+-- TAB 4: TỐC ĐỘ 🏃
+------------------------------------------
+local Tab4 = Window:CreateTab("Tốc độ 🏃")
+
+Tab4:CreateSlider({
+    Name = "Tốc độ di chuyển",
+    Range = {1,100},
+    Increment = 1,
+    CurrentValue = 16,
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+    end
+})
+
+------------------------------------------
+-- TAB 5: NHẢY CAO 🦘
+------------------------------------------
+local Tab5 = Window:CreateTab("Nhảy cao 🦘")
+
+Tab5:CreateSlider({
+    Name = "Độ cao nhảy",
+    Range = {1,100},
+    Increment = 1,
+    CurrentValue = 50,
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+    end
+})
+
+------------------------------------------
+-- TAB 6: DAME 💥
+------------------------------------------
+local Tab6 = Window:CreateTab("Dame 💥")
+
+Tab6:CreateToggle({
+    Name = "Hiện số Dame khi đánh",
+    CurrentValue = false,
+    Callback = function(Value)
+        _G.ShowDame = Value
+        if Value then
+            Rayfield:Notify({
+                Title = "Hiện dame",
+                Content = "Đã bật hiển thị số dame khi đánh!",
+                Duration = 3
+            })
+        end
+    end
+})
