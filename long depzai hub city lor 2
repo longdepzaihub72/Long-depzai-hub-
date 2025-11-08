@@ -1,0 +1,311 @@
+-- === LONGDEPZAI RAYFIELD UI (NO KEY) ===
+-- IMPORTANT: Paste your Rayfield loadstring ABOVE this script before executing.
+-- Example (do NOT include in this file if you will insert it manually):
+-- local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
+
+if not Rayfield then
+    error("Rayfield not found. Paste Rayfield loadstring above this script and run them together.")
+end
+
+-- Create window (KeySystem disabled)
+local Window = Rayfield:CreateWindow({
+    Name = "Longdepzai | city lor",
+    LoadingTitle = "Longdepzai Hub",
+    LoadingSubtitle = "city lor",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "longdepzai_config",
+        FileName = "settings"
+    },
+    Discord = {Enabled = false},
+    KeySystem = false
+})
+
+-- Helper: create 7-color stripe visual
+local function createSevenColorStripe(parent)
+    local stripeFrame = Instance.new("Frame")
+    stripeFrame.Name = "SevenColorStripe"
+    stripeFrame.Size = UDim2.new(1,0,0,8)
+    stripeFrame.Position = UDim2.new(0,0,0,0)
+    stripeFrame.BackgroundTransparency = 1
+    stripeFrame.Parent = parent
+
+    local colors = {
+        Color3.fromRGB(255,0,0),
+        Color3.fromRGB(255,127,0),
+        Color3.fromRGB(255,255,0),
+        Color3.fromRGB(0,255,0),
+        Color3.fromRGB(0,255,255),
+        Color3.fromRGB(0,0,255),
+        Color3.fromRGB(139,0,255)
+    }
+    local width = 1/#colors
+    for i, c in ipairs(colors) do
+        local s = Instance.new("Frame")
+        s.Size = UDim2.new(width, 0, 1, 0)
+        s.Position = UDim2.new((i-1)*width, 0, 0, 0)
+        s.BackgroundColor3 = c
+        s.BorderSizePixel = 0
+        s.Parent = stripeFrame
+    end
+    return stripeFrame
+end
+
+-- Floating open button GUI (top-center draggable)
+local coreGui = game:GetService("CoreGui")
+local StarterGui = game:GetService("StarterGui")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "Longdepzai_OpenButtonGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = coreGui or StarterGui
+
+local openBtn = Instance.new("ImageButton")
+openBtn.Name = "OpenMenuButton"
+openBtn.Size = UDim2.new(0,64,0,64)
+openBtn.Position = UDim2.new(0.5, -32, 0, 10) -- top-center
+openBtn.AnchorPoint = Vector2.new(0.5,0)
+openBtn.Image = "rbxassetid://79809536246322"
+openBtn.BackgroundTransparency = 0
+openBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+openBtn.BorderSizePixel = 0
+openBtn.Parent = screenGui
+openBtn.Active = true
+openBtn.Draggable = true
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+uiStroke.Thickness = 2
+uiStroke.Color = Color3.fromRGB(255,255,255)
+uiStroke.Parent = openBtn
+
+openBtn.MouseButton1Click:Connect(function()
+    local success, err = pcall(function()
+        if Window and Window.Toggle then
+            Window:Toggle()
+        elseif Rayfield and Rayfield.Toggle then
+            Rayfield:Toggle()
+        else
+            for _, v in pairs(coreGui:GetChildren()) do
+                if v.Name:lower():find("rayfield") then
+                    v.Enabled = not v.Enabled
+                end
+            end
+        end
+    end)
+    if not success then
+        warn("Could not toggle Rayfield window automatically. Error:", err)
+    end
+end)
+
+-- Create tabs (6)
+local tab1 = Window:CreateTab("Tab 1 - Farm Boss")
+local tab2 = Window:CreateTab("Tab 2 - PvP")
+local tab3 = Window:CreateTab("Tab 3 - Aimbot")
+local tab4 = Window:CreateTab("Tab 4 - Speed")
+local tab5 = Window:CreateTab("Tab 5 - Jump")
+local tab6 = Window:CreateTab("Tab 6 - Damage")
+
+-- === TAB 1: Farm Boss ===
+tab1:CreateSection("Boss Farming")
+tab1:CreateButton({
+    Name = "Fram Boss (stub)",
+    Callback = function()
+        -- SAFE STUB: replace with your own legal logic if needed
+        print("[Longdepzai] Fram Boss pressed - placeholder action (no teleport/cheat performed).")
+    end
+})
+tab1:CreateToggle({
+    Name = "Spam Attack (stub)",
+    Value = false,
+    Flag = "SpamAttack",
+    Callback = function(state)
+        print("[Longdepzai] Spam Attack toggled:", state)
+    end
+})
+tab1:CreateToggle({
+    Name = "Auto Pickup (stub)",
+    Value = false,
+    Flag = "AutoPickup",
+    Callback = function(state)
+        print("[Longdepzai] Auto Pickup toggled:", state)
+    end
+})
+tab1:CreateDropdown({
+    Name = "Chọn vũ khí",
+    Options = {"bá vương kích", "Phật", "bạch long", "Hắc long", "Võ đang kiếm pháp"},
+    CurrentOption = "bá vương kích",
+    Multiple = false,
+    Flag = "WeaponSelect",
+    Callback = function(opt)
+        print("[Longdepzai] Weapon selected:", opt)
+    end
+})
+tab1:CreateToggle({
+    Name = "Giao hàng (stub)",
+    Value = false,
+    Flag = "Delivery",
+    Callback = function(state)
+        print("[Longdepzai] Delivery toggled:", state)
+    end
+})
+
+-- === TAB 2: PvP ===
+tab2:CreateSection("PvP Tools (safe stubs)")
+tab2:CreateToggle({
+    Name = "Xoay 360 (visual stub)",
+    Value = false,
+    Flag = "Spin360",
+    Callback = function(state)
+        print("[Longdepzai] Spin360 toggled:", state)
+    end
+})
+tab2:CreateToggle({
+    Name = "Spam đánh (stub)",
+    Value = false,
+    Flag = "SpamHit",
+    Callback = function(state)
+        print("[Longdepzai] Spam Hit toggled:", state)
+    end
+})
+tab2:CreateSlider({
+    Name = "Hitbox Power (1-100) (visual only)",
+    Range = {1,100},
+    Increment = 1,
+    Suffix = "",
+    Value = 50,
+    Flag = "HitboxSlider",
+    Callback = function(value)
+        print("[Longdepzai] Hitbox slider value:", value)
+    end
+})
+
+-- === TAB 3: Aimbot (visual stub) ===
+tab3:CreateSection("Aimbot (VISUAL STUB ONLY)")
+tab3:CreateToggle({
+    Name = "Aimbot (visual stub)",
+    Value = false,
+    Flag = "Aimbot",
+    Callback = function(state)
+        print("[Longdepzai] Aimbot toggled (visual stub):", state)
+    end
+})
+tab3:CreateSlider({
+    Name = "Target Radius (visual)",
+    Range = {10,200},
+    Increment = 1,
+    Value = 80,
+    Flag = "AimbotRadius",
+    Callback = function(v)
+        print("[Longdepzai] Aimbot radius:", v)
+    end
+})
+
+-- === TAB 4: Speed ===
+tab4:CreateSection("Tốc độ")
+tab4:CreateSlider({
+    Name = "Tốc độ (1-100)",
+    Range = {1,100},
+    Increment = 1,
+    Value = 16,
+    Flag = "SpeedSlider",
+    Callback = function(value)
+        print("[Longdepzai] Speed slider changed to:", value)
+    end
+})
+tab4:CreateToggle({
+    Name = "Enable Speed (stub)",
+    Value = false,
+    Flag = "EnableSpeed",
+    Callback = function(state)
+        print("[Longdepzai] Enable Speed toggled:", state)
+    end
+})
+
+-- === TAB 5: Jump ===
+tab5:CreateSection("Nhảy cao")
+tab5:CreateSlider({
+    Name = "Jump Height (1-100)",
+    Range = {1,100},
+    Increment = 1,
+    Value = 50,
+    Flag = "JumpSlider",
+    Callback = function(val)
+        print("[Longdepzai] Jump slider:", val)
+    end
+})
+tab5:CreateToggle({
+    Name = "Enable High Jump (stub)",
+    Value = false,
+    Flag = "EnableJump",
+    Callback = function(state)
+        print("[Longdepzai] High Jump toggled:", state)
+    end
+})
+
+-- === TAB 6: Damage ===
+tab6:CreateSection("Dame")
+tab6:CreateToggle({
+    Name = "Show Damage Numbers (local)",
+    Value = false,
+    Flag = "ShowDamage",
+    Callback = function(state)
+        print("[Longdepzai] Show Damage toggled:", state)
+    end
+})
+tab6:CreateSlider({
+    Name = "Damage Display Value (visual)",
+    Range = {1,10000},
+    Increment = 1,
+    Value = 100,
+    Flag = "DamageValue",
+    Callback = function(v)
+        print("[Longdepzai] Damage value set to:", v)
+    end
+})
+
+-- Header styling / attach visuals (best-effort)
+local function attachHeaderVisuals()
+    for _, child in ipairs(coreGui:GetChildren()) do
+        if child.Name:lower():find("rayfield") or child.Name:lower():find("longdepzai") then
+            local mainFrame = child:FindFirstChildWhichIsA("Frame", true)
+            if mainFrame then
+                local header = Instance.new("Frame")
+                header.Name = "LongdepzaiHeader"
+                header.Size = UDim2.new(1,0,0,36)
+                header.Position = UDim2.new(0,0,0,0)
+                header.BackgroundColor3 = Color3.fromRGB(255,245,247) -- light pink-white
+                header.BorderSizePixel = 0
+                header.Parent = mainFrame
+
+                local title = Instance.new("TextLabel")
+                title.Name = "HeaderTitle"
+                title.Size = UDim2.new(1, -8, 1, 0)
+                title.Position = UDim2.new(0,4,0,0)
+                title.BackgroundTransparency = 1
+                title.Text = "Longdepzai | city lor"
+                title.Font = Enum.Font.GothamBold
+                title.TextSize = 18
+                title.TextColor3 = Color3.fromRGB(60,60,60)
+                title.TextXAlignment = Enum.TextXAlignment.Left
+                title.Parent = header
+
+                createSevenColorStripe(mainFrame)
+                return
+            end
+        end
+    end
+end
+
+delay(0.6, function()
+    pcall(attachHeaderVisuals)
+end)
+
+-- Cleanup utility
+local function cleanup()
+    if screenGui then pcall(function() screenGui:Destroy() end) end
+    print("[Longdepzai] UI cleaned up.")
+end
+_G.Longdepzai_Cleanup = cleanup
+
+print("[Longdepzai] UI loaded. Use the floating button to open/close the menu. All actions are stubs/placeholders for safety.")
