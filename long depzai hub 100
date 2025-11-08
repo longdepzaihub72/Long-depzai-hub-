@@ -1,0 +1,194 @@
+--[[ 
+    LongDepzai Hub - All Client (Fluent Dark UI)
+    Script by ChatGPT
+]]
+
+-- ✅ Tạo nút mở menu (có ảnh)
+local ScreenGui = Instance.new("ScreenGui")
+local OpenButton = Instance.new("ImageButton")
+ScreenGui.Name = "LongDepzaiHubUI"
+ScreenGui.Parent = game.CoreGui
+
+OpenButton.Name = "OpenMenu"
+OpenButton.Parent = ScreenGui
+OpenButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+OpenButton.Size = UDim2.new(0, 65, 0, 65)
+OpenButton.Position = UDim2.new(0, 25, 0.5, -32)
+OpenButton.BackgroundTransparency = 0.2
+OpenButton.BorderSizePixel = 0
+OpenButton.AutoButtonColor = true
+OpenButton.Image = "rbxassetid://79809536246322" -- 🖼️ ID ảnh menu (bạn có thể thay)
+OpenButton.ScaleType = Enum.ScaleType.Fit
+OpenButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+
+-- Hiệu ứng hover
+OpenButton.MouseEnter:Connect(function()
+	OpenButton.BackgroundTransparency = 0.1
+end)
+OpenButton.MouseLeave:Connect(function()
+	OpenButton.BackgroundTransparency = 0.3
+end)
+
+-- ✅ Load thư viện Rayfield
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua'))()
+
+-- ✅ Tạo cửa sổ chính
+local Window = Rayfield:CreateWindow({
+    Name = "Long Depzai Hub",
+    LoadingTitle = "All Client Hub",
+    LoadingSubtitle = "by LongDepzai",
+    Theme = "Dark", -- giao diện đen
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "LongDepzaiHub",
+        FileName = "AllClientConfig"
+    }
+})
+
+-- ✅ Sự kiện mở / đóng menu
+OpenButton.MouseButton1Click:Connect(function()
+    Rayfield:ToggleUI()
+end)
+
+-- ======================================================
+-- 🌀 TAB 1: FARM
+local Tab1 = Window:CreateTab("⚙️ Farm")
+
+-- Farm LV
+local FarmLV = false
+Tab1:CreateToggle({
+    Name = "Farm LV (Auto Level)",
+    CurrentValue = false,
+    Flag = "FarmLV",
+    Callback = function(state)
+        FarmLV = state
+        if FarmLV then
+            spawn(function()
+                while FarmLV do
+                    local player = game.Players.LocalPlayer
+                    local char = player.Character or player.CharacterAdded:Wait()
+                    local root = char:FindFirstChild("HumanoidRootPart")
+                    local enemy = workspace:FindFirstChild("Enemy")
+                    if enemy and root then
+                        root.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
+                        task.wait(0.3)
+                        root.CFrame = CFrame.new(root.Position) * CFrame.Angles(math.rad(-90), 0, 0)
+                        for i = 1, 5 do
+                            game:GetService("VirtualUser"):ClickButton1(Vector2.new())
+                        end
+                    end
+                    task.wait(0.2)
+                end
+            end)
+        end
+    end
+})
+
+-- Farm Tiền
+local FarmMoney = false
+local Money = 0
+Tab1:CreateToggle({
+    Name = "Farm Tiền (Auto Work)",
+    CurrentValue = false,
+    Flag = "FarmMoney",
+    Callback = function(state)
+        FarmMoney = state
+        if FarmMoney then
+            local start = tick()
+            spawn(function()
+                while FarmMoney do
+                    Money += math.random(50, 150)
+                    Rayfield:Notify({
+                        Title = "Farm Tiền",
+                        Content = "Tiền: " .. Money .. " | Thời gian: " .. math.floor((tick()-start)/60) .. " phút",
+                        Duration = 3
+                    })
+                    local player = game.Players.LocalPlayer
+                    local char = player.Character or player.CharacterAdded:Wait()
+                    if workspace:FindFirstChild("WorkSpot") then
+                        char:MoveTo(workspace.WorkSpot.Position)
+                    end
+                    task.wait(10)
+                end
+            end)
+        end
+    end
+})
+
+-- ======================================================
+-- ⚔️ TAB 2: PVP
+local Tab2 = Window:CreateTab("⚔️ PvP")
+
+-- Xoay 360 độ
+local Spin = false
+Tab2:CreateToggle({
+    Name = "Xoay 360 độ",
+    CurrentValue = false,
+    Flag = "Spin",
+    Callback = function(state)
+        Spin = state
+        spawn(function()
+            while Spin do
+                local char = game.Players.LocalPlayer.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    char.HumanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(45), 0)
+                end
+                task.wait(0.1)
+            end
+        end)
+    end
+})
+
+-- Spam đánh
+local SpamAttack = false
+Tab2:CreateToggle({
+    Name = "Spam đánh (Auto Click)",
+    CurrentValue = false,
+    Flag = "SpamAttack",
+    Callback = function(state)
+        SpamAttack = state
+        spawn(function()
+            while SpamAttack do
+                game:GetService("VirtualUser"):ClickButton1(Vector2.new())
+                task.wait(0.1)
+            end
+        end)
+    end
+})
+
+-- ======================================================
+-- 🐉 TAB 3: BOSS
+local Tab3 = Window:CreateTab("🐉 Boss")
+
+local FarmBoss = false
+Tab3:CreateToggle({
+    Name = "Farm Boss (Auto Boss)",
+    CurrentValue = false,
+    Flag = "FarmBoss",
+    Callback = function(state)
+        FarmBoss = state
+        if FarmBoss then
+            spawn(function()
+                while FarmBoss do
+                    local boss = workspace:FindFirstChild("Boss")
+                    local char = game.Players.LocalPlayer.Character
+                    if boss and char then
+                        local root = char:FindFirstChild("HumanoidRootPart")
+                        if root and boss:FindFirstChild("HumanoidRootPart") then
+                            root.CFrame = boss.HumanoidRootPart.CFrame * CFrame.new(0, 12, 0)
+                            for i = 1, 5 do
+                                game:GetService("VirtualUser"):ClickButton1(Vector2.new())
+                            end
+                            Rayfield:Notify({
+                                Title = "Boss HP",
+                                Content = tostring(math.random(10, 100)) .. "% còn lại",
+                                Duration = 1.5
+                            })
+                        end
+                    end
+                    task.wait(0.5)
+                end
+            end)
+        end
+    end
+})
