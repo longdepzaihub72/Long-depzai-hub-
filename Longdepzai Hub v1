@@ -1,0 +1,465 @@
+-- 🌸 LongDepzai HUB V4 (UI Demo TXT Version)
+-- An toàn: hoàn toàn là UI mô phỏng, KHÔNG can thiệp gameplay, KHÔNG thay đổi lighting/graphics thật
+-- Chạy ở LocalScript trong PlayerGui nếu muốn xem trong Roblox Studio, hoặc giữ như .txt để dùng sau
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+-- ===== ScreenGui =====
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "LongDepzaiHubV4"
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
+
+-- ===== Nút mở menu hình tròn (kéo được) + viền 7 màu =====
+local OpenButton = Instance.new("ImageButton")
+OpenButton.Name = "OpenMenuButton"
+OpenButton.Parent = ScreenGui
+OpenButton.Size = UDim2.new(0, 96, 0, 96)
+OpenButton.Position = UDim2.new(0.5, -48, 0.5, -48)
+OpenButton.AnchorPoint = Vector2.new(0.5, 0.5)
+OpenButton.Image = "rbxassetid://79809536246322"
+OpenButton.BackgroundColor3 = Color3.fromRGB(255,255,255)
+OpenButton.BorderSizePixel = 0
+OpenButton.AutoButtonColor = false
+
+local ButtonStroke = Instance.new("UIStroke", OpenButton)
+ButtonStroke.Thickness = 4
+ButtonStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+task.spawn(function()
+	local hue = 0
+	while task.wait(0.03) do
+		hue = (hue + 0.006) % 1
+		ButtonStroke.Color = Color3.fromHSV(hue, 1, 1)
+	end
+end)
+
+-- draggable behavior for OpenButton
+local dragging, dragInput, dragStart, startPos
+local function update(input)
+	local delta = input.Position - dragStart
+	OpenButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+OpenButton.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = OpenButton.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+OpenButton.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then update(input) end
+end)
+
+-- ===== Main Menu (corner, white-pink, rainbow border) =====
+local Menu = Instance.new("Frame")
+Menu.Name = "MenuFrame"
+Menu.Parent = ScreenGui
+Menu.Size = UDim2.new(0, 500, 0, 360)
+Menu.Position = UDim2.new(1, -540, 1, -420) -- bottom-right hidden initial
+Menu.BackgroundColor3 = Color3.fromRGB(255,250,254)
+Menu.BorderSizePixel = 0
+Menu.Visible = false
+local MenuCorner = Instance.new("UICorner", Menu); MenuCorner.CornerRadius = UDim.new(0,16)
+
+local MenuStroke = Instance.new("UIStroke", Menu)
+MenuStroke.Thickness = 4
+MenuStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+task.spawn(function()
+	local h = 0
+	while task.wait(0.03) do
+		h = (h + 0.006) % 1
+		MenuStroke.Color = Color3.fromHSV(h, 1, 1)
+	end
+end)
+
+-- Title area
+local TitleBar = Instance.new("Frame", Menu)
+TitleBar.Size = UDim2.new(1,0,0,54)
+TitleBar.Position = UDim2.new(0,0,0,0)
+TitleBar.BackgroundColor3 = Color3.fromRGB(255,230,240)
+local TitleLabel = Instance.new("TextLabel", TitleBar)
+TitleLabel.Size = UDim2.new(1,-20,1,0); TitleLabel.Position = UDim2.new(0,10,0,0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 18
+TitleLabel.TextColor3 = Color3.fromRGB(20,20,20)
+TitleLabel.Text = "🌸 LongDepzai HUB | CityLor"
+
+-- Tabs row
+local TabsRow = Instance.new("Frame", Menu)
+TabsRow.Size = UDim2.new(1,0,0,44)
+TabsRow.Position = UDim2.new(0,0,0,54)
+TabsRow.BackgroundColor3 = Color3.fromRGB(255,255,255)
+
+-- Content area
+local Content = Instance.new("Frame", Menu)
+Content.Size = UDim2.new(1,-24,1,-118)
+Content.Position = UDim2.new(0,12,0,110)
+Content.BackgroundTransparency = 1
+
+local ContentLabel = Instance.new("TextLabel", Content)
+ContentLabel.Size = UDim2.new(1,0,1,0)
+ContentLabel.BackgroundTransparency = 1
+ContentLabel.TextWrapped = true
+ContentLabel.Font = Enum.Font.Gotham
+ContentLabel.TextSize = 16
+ContentLabel.TextColor3 = Color3.fromRGB(20,20,20)
+ContentLabel.Text = "Chọn tab để xem nội dung (Demo UI — KHÔNG can thiệp gameplay)."
+
+-- helper to create tab button
+local function createTabBtn(text, index)
+	local btn = Instance.new("TextButton", TabsRow)
+	btn.Size = UDim2.new(1/8, 0, 1, 0)
+	btn.Position = UDim2.new((index-1)/8, 0, 0, 0)
+	btn.Text = text
+	btn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 13
+	btn.TextColor3 = Color3.fromRGB(20,20,20)
+	return btn
+end
+
+-- create 8 tabs
+local tabNames = {"⚔️ PVP","💥 Buff Dame","📦 Giao Hàng","🚀 Scripts","🌸 Thông Tin","🎯 Aimbot","💨 Speed","⚙️ Setting"}
+local tabs = {}
+for i,name in ipairs(tabNames) do tabs[i] = createTabBtn(name, i) end
+
+-- demo state (all UI-only)
+local state = {
+	spin=false, spam=false,
+	buffValue=1,
+	delivery=false,
+	aimVisual=false,
+	speedValue=1,
+	setting_shadow=false,
+	setting_brightness=false
+}
+
+-- Clear content children helper
+local function clearContent()
+	for _,c in pairs(Content:GetChildren()) do
+		if c ~= ContentLabel then pcall(function() c:Destroy() end) end
+	end
+end
+
+-- Small UI control creators (demo only)
+local function makeToggle(initial, onChange)
+	local frame = Instance.new("Frame", Content)
+	frame.Size = UDim2.new(0, 120, 0, 36)
+	frame.BackgroundTransparency = 1
+	local btn = Instance.new("TextButton", frame)
+	btn.Size = UDim2.new(1,0,1,0); btn.Position = UDim2.new(0,0,0,0)
+	btn.BackgroundColor3 = initial and Color3.fromRGB(255,180,210) or Color3.fromRGB(240,240,240)
+	btn.Text = initial and "ON" or "OFF"
+	btn.Font = Enum.Font.Gotham
+	btn.TextSize = 14
+	btn.TextColor3 = Color3.fromRGB(20,20,20)
+	btn.AutoButtonColor = false
+	btn.MouseButton1Click:Connect(function()
+		initial = not initial
+		btn.BackgroundColor3 = initial and Color3.fromRGB(255,180,210) or Color3.fromRGB(240,240,240)
+		btn.Text = initial and "ON" or "OFF"
+		onChange(initial)
+	end)
+	return frame, function() return initial end
+end
+
+-- PVP tab (demo)
+local function showPVP()
+	clearContent()
+	ContentLabel.Text = "⚔️ PVP (Demo UI)\n\n- Xoay 360° (demo)\n- Spam đánh (demo)\n\nCác nút ở đây chỉ mô phỏng trạng thái, KHÔNG can thiệp gameplay."
+	-- spin toggle
+	local frame1 = Instance.new("Frame", Content); frame1.Size = UDim2.new(1,0,0,40); frame1.BackgroundTransparency=1; frame1.Position=UDim2.new(0,0,0,0)
+	local spinBtn = Instance.new("TextButton", frame1); spinBtn.Size = UDim2.new(0,180,0,36); spinBtn.Position=UDim2.new(0,0,0,2)
+	spinBtn.Text = "Xoay 360°: " .. (state.spin and "ON" or "OFF"); spinBtn.Font=Enum.Font.Gotham
+	spinBtn.MouseButton1Click:Connect(function()
+		state.spin = not state.spin
+		spinBtn.Text = "Xoay 360°: " .. (state.spin and "ON" or "OFF")
+		ContentLabel.Text = state.spin and "Xoay 360° đã bật (Demo)." or "Xoay 360° đã tắt."
+	end)
+	-- spam toggle
+	local spamBtn = Instance.new("TextButton", frame1); spamBtn.Size=UDim2.new(0,180,0,36); spamBtn.Position=UDim2.new(0,190,0,2)
+	spamBtn.Text = "Spam đánh: " .. (state.spam and "ON" or "OFF"); spamBtn.Font=Enum.Font.Gotham
+	spamBtn.MouseButton1Click:Connect(function()
+		state.spam = not state.spam
+		spamBtn.Text = "Spam đánh: " .. (state.spam and "ON" or "OFF")
+		ContentLabel.Text = state.spam and "Spam đánh bật (Demo)." or "Spam đánh tắt."
+	end)
+end
+
+-- Buff Dame tab (demo)
+local function showBuff()
+	clearContent()
+	ContentLabel.Text = "💥 Buff Dame (Demo)\nChỉnh giá trị (1 - 99). Chỉ hiển thị số."
+	local frame = Instance.new("Frame", Content); frame.Size = UDim2.new(1,0,0,64); frame.BackgroundTransparency=1
+	local minus = Instance.new("TextButton", frame); minus.Size = UDim2.new(0,48,0,36); minus.Position = UDim2.new(0,0,0,10); minus.Text = "-"
+	local plus = Instance.new("TextButton", frame); plus.Size = UDim2.new(0,48,0,36); plus.Position = UDim2.new(0,420,0,10); plus.Text = "+"
+	local valLabel = Instance.new("TextLabel", frame); valLabel.Size = UDim2.new(0,200,0,36); valLabel.Position = UDim2.new(0,60,0,10)
+	valLabel.BackgroundTransparency = 1; valLabel.Font = Enum.Font.Gotham; valLabel.TextSize = 16
+	valLabel.Text = "Buff: x" .. tostring(state.buffValue)
+	minus.MouseButton1Click:Connect(function()
+		state.buffValue = math.clamp(state.buffValue - 1, 1, 99)
+		valLabel.Text = "Buff: x" .. tostring(state.buffValue)
+		ContentLabel.Text = "Buff Dame (Demo) set to: " .. tostring(state.buffValue)
+	end)
+	plus.MouseButton1Click:Connect(function()
+		state.buffValue = math.clamp(state.buffValue + 1, 1, 99)
+		valLabel.Text = "Buff: x" .. tostring(state.buffValue)
+		ContentLabel.Text = "Buff Dame (Demo) set to: " .. tostring(state.buffValue)
+	end)
+end
+
+-- Delivery tab (demo)
+local function showDelivery()
+	clearContent()
+	ContentLabel.Text = "📦 Giao Hàng (Demo)\nBật để mô phỏng di chuyển lấy/đặt thùng (UI only)."
+	local btn = Instance.new("TextButton", Content); btn.Size = UDim2.new(0,200,0,36); btn.Position = UDim2.new(0,0,0,0)
+	btn.Text = "Giao hàng: " .. (state.delivery and "ON" or "OFF")
+	btn.MouseButton1Click:Connect(function()
+		state.delivery = not state.delivery
+		btn.Text = "Giao hàng: " .. (state.delivery and "ON" or "OFF")
+		ContentLabel.Text = state.delivery and "Mô phỏng giao hàng đang chạy (Demo)." or "Giao hàng dừng."
+	end)
+end
+
+-- Scripts tab (demo)
+local function showScripts()
+	clearContent()
+	ContentLabel.Text = "🚀 Scripts (Demo)\nCác nút ở đây chỉ mô phỏng hành động; KHÔNG chạy mã exploit."
+	local flyBtn = Instance.new("TextButton", Content); flyBtn.Size = UDim2.new(0,200,0,36); flyBtn.Position=UDim2.new(0,0,0,0); flyBtn.Text="Bay (Demo)"
+	flyBtn.MouseButton1Click:Connect(function() ContentLabel.Text = "Yêu cầu Bay (Demo) — hiển thị only." end)
+	local stopBtn = Instance.new("TextButton", Content); stopBtn.Size=UDim2.new(0,200,0,36); stopBtn.Position=UDim2.new(0,210,0,0); stopBtn.Text="Tắt toàn bộ (Demo)"
+	stopBtn.MouseButton1Click:Connect(function()
+		state = {spin=false, spam=false, buffValue=1, delivery=false, aimVisual=false, speedValue=1, setting_shadow=false, setting_brightness=false}
+		ContentLabel.Text = "Đã tắt toàn bộ (Demo)."
+	end)
+end
+
+-- Info tab
+local function showInfo()
+	clearContent()
+	ContentLabel.Text = "🌸 Thông Tin\nFlower Longdepzaihub để có nhiều bản xịn hơn.\n\n(Lưu ý: Đây là bản demo UI — KHÔNG can thiệp gameplay.)"
+end
+
+-- Aimbot visual (demo only)
+local aimFrame = nil
+local rays = {}
+
+local function createAimVisual()
+	-- remove old if exists
+	if aimFrame and aimFrame.Parent then aimFrame:Destroy() end
+	aimFrame = Instance.new("Frame", ScreenGui)
+	aimFrame.Name = "AimVisual"
+	aimFrame.Size = UDim2.new(0,220,0,220)
+	aimFrame.Position = UDim2.new(0.5, -110, 0.5, -110)
+	aimFrame.AnchorPoint = Vector2.new(0.5,0.5)
+	aimFrame.BackgroundTransparency = 1
+	local stroke = Instance.new("UIStroke", aimFrame); stroke.Thickness = 4
+	task.spawn(function()
+		local h=0
+		while aimFrame and aimFrame.Parent do
+			h = (h + 0.006) % 1
+			stroke.Color = Color3.fromHSV(h,1,1)
+			task.wait(0.03)
+		end
+	end)
+	-- create rays
+	for i=1,8 do
+		local r = Instance.new("Frame", aimFrame)
+		r.Size = UDim2.new(0,4,0,70)
+		r.AnchorPoint = Vector2.new(0.5,0)
+		r.Position = UDim2.new(0.5,0,0.5,-35)
+		r.Rotation = (i-1) * 45
+		r.BackgroundColor3 = Color3.fromRGB(255,255,255)
+		r.BorderSizePixel = 0
+		r.Visible = false
+		table.insert(rays, r)
+	end
+end
+
+local function showAimbot()
+	clearContent()
+	ContentLabel.Text = "🎯 Aimbot (Demo Visual Only)\nHiển thị vòng tròn 7 màu ở giữa + các ray chỉ hướng. KHÔNG tự lia / KHÔNG tự khóa mục tiêu."
+	-- toggle button
+	local btn = Instance.new("TextButton", Content); btn.Size = UDim2.new(0,220,0,36); btn.Position=UDim2.new(0,0,0,0)
+	btn.Text = state.aimVisual and "Tắt hiệu ứng Aimbot" or "Bật hiệu ứng Aimbot"
+	btn.MouseButton1Click:Connect(function()
+		state.aimVisual = not state.aimVisual
+		btn.Text = state.aimVisual and "Tắt hiệu ứng Aimbot" or "Bật hiệu ứng Aimbot"
+		if state.aimVisual then
+			if not aimFrame then createAimVisual() end
+			aimFrame.Visible = true
+			for _,r in pairs(rays) do r.Visible = true end
+		else
+			if aimFrame then aimFrame.Visible = false end
+			for _,r in pairs(rays) do r.Visible = false end
+		end
+	end)
+end
+
+-- Speed tab (demo)
+local function showSpeed()
+	clearContent()
+	ContentLabel.Text = "💨 Speed (Demo)\nChỉnh giá trị 1 - 100 (CHỈ MÔ PHỎNG)."
+	local frame = Instance.new("Frame", Content); frame.Size = UDim2.new(1,0,0,60); frame.BackgroundTransparency = 1
+	local minus = Instance.new("TextButton", frame); minus.Size = UDim2.new(0,40,0,36); minus.Position=UDim2.new(0,0,0,12); minus.Text='-'
+	local plus = Instance.new("TextButton", frame); plus.Size = UDim2.new(0,40,0,36); plus.Position=UDim2.new(0,420,0,12); plus.Text='+'
+	local valLabel = Instance.new("TextLabel", frame); valLabel.Size = UDim2.new(0,200,0,36); valLabel.Position=UDim2.new(0,52,0,12)
+	valLabel.BackgroundTransparency = 1; valLabel.Font = Enum.Font.Gotham; valLabel.TextSize = 16
+	valLabel.Text = "Speed: " .. tostring(state.speedValue)
+	minus.MouseButton1Click:Connect(function()
+		state.speedValue = math.clamp(state.speedValue - 1, 1, 100)
+		valLabel.Text = "Speed: " .. tostring(state.speedValue)
+		ContentLabel.Text = "Speed (Demo) set to: " .. tostring(state.speedValue)
+	end)
+	plus.MouseButton1Click:Connect(function()
+		state.speedValue = math.clamp(state.speedValue + 1, 1, 100)
+		valLabel.Text = "Speed: " .. tostring(state.speedValue)
+		ContentLabel.Text = "Speed (Demo) set to: " .. tostring(state.speedValue)
+	end)
+end
+
+-- Setting tab (demo - visual only)
+-- "Bật/Tắt Bóng" => tạo/huỷ Frame giả lập shadow overlay (UI-only)
+-- "Thêm Độ Sáng" => tăng độ sáng visual của menu (UI-only)
+local shadowOverlay = nil
+local function enableShadow(on)
+	if on then
+		if not shadowOverlay then
+			shadowOverlay = Instance.new("Frame", Menu)
+			shadowOverlay.Name = "ShadowOverlay"
+			shadowOverlay.Size = UDim2.new(1,0,1,0)
+			shadowOverlay.Position = UDim2.new(0,0,0,0)
+			shadowOverlay.BackgroundColor3 = Color3.fromRGB(0,0,0)
+			shadowOverlay.BackgroundTransparency = 0.9 -- light effect; purely UI
+			shadowOverlay.ZIndex = Menu.ZIndex - 1
+		end
+		shadowOverlay.Visible = true
+	else
+		if shadowOverlay then shadowOverlay.Visible = false end
+	end
+end
+
+local function setMenuBrightness(on)
+	if on then
+		Menu.BackgroundColor3 = Color3.fromRGB(255,255,255)
+		TitleBar.BackgroundColor3 = Color3.fromRGB(255,245,250)
+		ContentLabel.Text = "✨ Độ sáng UI tăng (Demo)."
+	else
+		Menu.BackgroundColor3 = Color3.fromRGB(255,250,254)
+		TitleBar.BackgroundColor3 = Color3.fromRGB(255,230,240)
+		ContentLabel.Text = "🔅 Độ sáng UI bình thường (Demo)."
+	end
+end
+
+local function showSetting()
+	clearContent()
+	ContentLabel.Text = "⚙️ Setting (Demo)\nCác chức năng chỉ mô phỏng UI: Bật/Tắt Bóng và Thêm Độ Sáng."
+	-- shadow toggle
+	local shadowBtn = Instance.new("TextButton", Content); shadowBtn.Size = UDim2.new(0,200,0,36); shadowBtn.Position=UDim2.new(0,0,0,0)
+	shadowBtn.Text = state.setting_shadow and "Bóng: ON" or "Bóng: OFF"
+	shadowBtn.MouseButton1Click:Connect(function()
+		state.setting_shadow = not state.setting_shadow
+		shadowBtn.Text = state.setting_shadow and "Bóng: ON" or "Bóng: OFF"
+		enableShadow(state.setting_shadow)
+		ContentLabel.Text = state.setting_shadow and "Bóng (shader) đã bật (Demo)." or "Bóng đã tắt (Demo)."
+	end)
+	-- brightness toggle
+	local brightBtn = Instance.new("TextButton", Content); brightBtn.Size = UDim2.new(0,200,0,36); brightBtn.Position=UDim2.new(0,210,0,0)
+	brightBtn.Text = state.setting_brightness and "Sáng: ON" or "Sáng: OFF"
+	brightBtn.MouseButton1Click:Connect(function()
+		state.setting_brightness = not state.setting_brightness
+		brightBtn.Text = state.setting_brightness and "Sáng: ON" or "Sáng: OFF"
+		setMenuBrightness(state.setting_brightness)
+	end)
+end
+
+-- Hook tabs to functions
+tabs[1].MouseButton1Click:Connect(function()
+	for _,b in pairs(tabs) do b.BackgroundColor3 = Color3.fromRGB(255,255,255) end
+	tabs[1].BackgroundColor3 = Color3.fromRGB(255,230,240)
+	showPVP()
+end)
+tabs[2].MouseButton1Click:Connect(function()
+	for _,b in pairs(tabs) do b.BackgroundColor3 = Color3.fromRGB(255,255,255) end
+	tabs[2].BackgroundColor3 = Color3.fromRGB(255,230,240)
+	showBuff()
+end)
+tabs[3].MouseButton1Click:Connect(function()
+	for _,b in pairs(tabs) do b.BackgroundColor3 = Color3.fromRGB(255,255,255) end
+	tabs[3].BackgroundColor3 = Color3.fromRGB(255,230,240)
+	showDelivery()
+end)
+tabs[4].MouseButton1Click:Connect(function()
+	for _,b in pairs(tabs) do b.BackgroundColor3 = Color3.fromRGB(255,255,255) end
+	tabs[4].BackgroundColor3 = Color3.fromRGB(255,230,240)
+	showScripts()
+end)
+tabs[5].MouseButton1Click:Connect(function()
+	for _,b in pairs(tabs) do b.BackgroundColor3 = Color3.fromRGB(255,255,255) end
+	tabs[5].BackgroundColor3 = Color3.fromRGB(255,230,240)
+	showInfo()
+end)
+tabs[6].MouseButton1Click:Connect(function()
+	for _,b in pairs(tabs) do b.BackgroundColor3 = Color3.fromRGB(255,255,255) end
+	tabs[6].BackgroundColor3 = Color3.fromRGB(255,230,240)
+	showAimbot()
+end)
+tabs[7].MouseButton1Click:Connect(function()
+	for _,b in pairs(tabs) do b.BackgroundColor3 = Color3.fromRGB(255,255,255) end
+	tabs[7].BackgroundColor3 = Color3.fromRGB(255,230,240)
+	showSpeed()
+end)
+tabs[8].MouseButton1Click:Connect(function()
+	for _,b in pairs(tabs) do b.BackgroundColor3 = Color3.fromRGB(255,255,255) end
+	tabs[8].BackgroundColor3 = Color3.fromRGB(255,230,240)
+	showSetting()
+end)
+
+-- Open/close menu
+local isOpen = false
+OpenButton.MouseButton1Click:Connect(function()
+	isOpen = not isOpen
+	if isOpen then
+		Menu.Visible = true
+		TweenService:Create(Menu, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(1, -540, 1, -420)}):Play()
+	else
+		TweenService:Create(Menu, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(1, -540, 1, 100)}):Play()
+		task.delay(0.25, function() Menu.Visible = false end)
+	end
+end)
+
+-- init: select first tab
+tabs[1].BackgroundColor3 = Color3.fromRGB(255,230,240)
+showPVP()
+
+-- Notification helper (UI-only)
+local function Notify(text)
+	local n = Instance.new("TextLabel", ScreenGui)
+	n.Size = UDim2.new(0,320,0,36); n.Position = UDim2.new(0.5,-160,0,20)
+	n.BackgroundColor3 = Color3.fromRGB(0,0,0); n.BackgroundTransparency = 0.2
+	n.TextColor3 = Color3.fromRGB(255,255,255); n.Text = text
+	n.Font = Enum.Font.GothamBold; n.TextSize = 14; n.BorderSizePixel = 0
+	TweenService:Create(n, TweenInfo.new(0.3), {Position=UDim2.new(0.5,-160,0,50)}):Play()
+	task.delay(1.6, function()
+		TweenService:Create(n, TweenInfo.new(0.25), {Position=UDim2.new(0.5,-160,0,20)}):Play()
+		task.delay(0.28, function() pcall(function() n:Destroy() end) end)
+	end)
+end
+
+Notify("LongDepzai HUB V4 (UI Demo) loaded")
+-- END OF FILE
