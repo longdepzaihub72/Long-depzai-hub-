@@ -1,0 +1,183 @@
+--[[ 
+    👹 LongDepzai Hub | City Lor 
+    Fluent style UI - Red Theme
+    Tác giả: LongDepzai
+--]]
+
+-- Hàm tạo hiệu ứng viền 7 màu
+local function rainbowBorder(frame)
+    task.spawn(function()
+        local hue = 0
+        while task.wait(0.05) do
+            hue = (hue + 1) % 360
+            frame.UIStroke.Color = Color3.fromHSV(hue / 360, 1, 1)
+        end
+    end)
+end
+
+-- Tạo ScreenGui
+local gui = Instance.new("ScreenGui")
+gui.Name = "LongDepzaiHub"
+gui.ResetOnSpawn = false
+gui.Parent = game:GetService("CoreGui")
+
+-- Nút mở menu 👹
+local openBtn = Instance.new("TextButton")
+openBtn.Size = UDim2.new(0, 60, 0, 60)
+openBtn.Position = UDim2.new(0, 20, 0.5, -30)
+openBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+openBtn.Text = "👹"
+openBtn.TextSize = 28
+openBtn.Font = Enum.Font.GothamBold
+openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+openBtn.Parent = gui
+openBtn.AutoButtonColor = false
+openBtn.BackgroundTransparency = 0.2
+
+-- Viền 7 màu cho nút mở menu
+local strokeBtn = Instance.new("UIStroke", openBtn)
+strokeBtn.Thickness = 3
+rainbowBorder(openBtn)
+
+local uicornerBtn = Instance.new("UICorner", openBtn)
+uicornerBtn.CornerRadius = UDim.new(0, 12)
+
+-- Khung menu chính
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 400, 0, 300)
+main.Position = UDim2.new(0.5, -200, 0.5, -150)
+main.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
+main.Visible = false
+main.Parent = gui
+
+local uicornerMain = Instance.new("UICorner", main)
+uicornerMain.CornerRadius = UDim.new(0, 15)
+
+local strokeMain = Instance.new("UIStroke", main)
+strokeMain.Thickness = 4
+rainbowBorder(main)
+
+-- Thanh tiêu đề
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+title.Text = "👹 LongDepzai Hub | City Lor"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+
+local uicornerTitle = Instance.new("UICorner", title)
+uicornerTitle.CornerRadius = UDim.new(0, 12)
+
+-- Nút đóng
+local closeBtn = Instance.new("TextButton", title)
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -35, 0, 5)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "❌"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 16
+
+-- Tabs
+local tabContainer = Instance.new("Frame", main)
+tabContainer.Size = UDim2.new(0, 100, 1, -40)
+tabContainer.Position = UDim2.new(0, 0, 0, 40)
+tabContainer.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+
+local uicornerTab = Instance.new("UICorner", tabContainer)
+uicornerTab.CornerRadius = UDim.new(0, 12)
+
+local content = Instance.new("Frame", main)
+content.Size = UDim2.new(1, -100, 1, -40)
+content.Position = UDim2.new(0, 100, 0, 40)
+content.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+
+local uicornerContent = Instance.new("UICorner", content)
+uicornerContent.CornerRadius = UDim.new(0, 12)
+
+-- Tabs Buttons
+local tab1Btn = Instance.new("TextButton", tabContainer)
+tab1Btn.Size = UDim2.new(1, 0, 0, 40)
+tab1Btn.Position = UDim2.new(0, 0, 0, 10)
+tab1Btn.Text = "⚔️ PvP"
+tab1Btn.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+tab1Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+tab1Btn.Font = Enum.Font.GothamBold
+tab1Btn.TextSize = 16
+
+local tab2Btn = Instance.new("TextButton", tabContainer)
+tab2Btn.Size = UDim2.new(1, 0, 0, 40)
+tab2Btn.Position = UDim2.new(0, 0, 0, 60)
+tab2Btn.Text = "🧱 Fram Lv"
+tab2Btn.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+tab2Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+tab2Btn.Font = Enum.Font.GothamBold
+tab2Btn.TextSize = 16
+
+-- Nội dung tab PvP
+local tab1Content = Instance.new("Frame", content)
+tab1Content.Size = UDim2.new(1, 0, 1, 0)
+tab1Content.Visible = true
+tab1Content.BackgroundTransparency = 1
+
+local tab2Content = Instance.new("Frame", content)
+tab2Content.Size = UDim2.new(1, 0, 1, 0)
+tab2Content.Visible = false
+tab2Content.BackgroundTransparency = 1
+
+-- Tạo các nút PvP
+local function createToggle(name, parent)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(0.9, 0, 0, 35)
+    btn.Position = UDim2.new(0.05, 0, 0, (#parent:GetChildren()-1)*40)
+    btn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 16
+    btn.Text = name.." [OFF]"
+    local active = false
+    btn.MouseButton1Click:Connect(function()
+        active = not active
+        btn.Text = name .. (active and " [ON]" or " [OFF]")
+    end)
+end
+
+createToggle("Xoay 360 độ", tab1Content)
+createToggle("Chọn vũ khí", tab1Content)
+createToggle("Hitbox 7 màu", tab1Content)
+createToggle("Spam đánh", tab1Content)
+
+-- Tab Fram Lv
+local framBtn = Instance.new("TextButton", tab2Content)
+framBtn.Size = UDim2.new(0.9, 0, 0, 35)
+framBtn.Position = UDim2.new(0.05, 0, 0, 10)
+framBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+framBtn.TextColor3 = Color3.new(1,1,1)
+framBtn.Font = Enum.Font.Gotham
+framBtn.TextSize = 16
+framBtn.Text = "Fram Lv [OFF]"
+local activeFram = false
+framBtn.MouseButton1Click:Connect(function()
+    activeFram = not activeFram
+    framBtn.Text = "Fram Lv " .. (activeFram and "[ON]" or "[OFF]")
+end)
+
+-- Chuyển tab
+tab1Btn.MouseButton1Click:Connect(function()
+    tab1Content.Visible = true
+    tab2Content.Visible = false
+end)
+tab2Btn.MouseButton1Click:Connect(function()
+    tab1Content.Visible = false
+    tab2Content.Visible = true
+end)
+
+-- Sự kiện mở / đóng menu
+openBtn.MouseButton1Click:Connect(function()
+    main.Visible = not main.Visible
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    main.Visible = false
+end)
