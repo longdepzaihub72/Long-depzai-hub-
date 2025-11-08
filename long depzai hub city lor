@@ -1,0 +1,538 @@
+-- === LONGDEPZAI RAYFIELD UI (FILE .TXT) ===
+-- IMPORTANT: Paste your Rayfield loadstring ABOVE this script before executing.
+-- Example (do NOT include in this file if you will insert it manually):
+-- local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
+
+-- REQUIRED KEY (case-sensitive)
+local REQUIRED_KEY = "longdepzaihub"
+
+-- Helper: try to save key to file if exploit supports writefile
+local function try_save_key(key)
+    local ok, err = pcall(function()
+        if writefile then
+            writefile("longdepzai_key.txt", key)
+        elseif syn and syn and syn.write_file then
+            syn.write_file("longdepzai_key.txt", key)
+        end
+    end)
+    return ok
+end
+
+-- Helper: try to load saved key
+local function try_load_saved_key()
+    local ok, content = pcall(function()
+        if readfile then
+            return readfile("longdepzai_key.txt")
+        elseif syn and syn and syn.read_file then
+            return syn.read_file("longdepzai_key.txt")
+        else
+            return nil
+        end
+    end)
+    if ok then
+        return content
+    else
+        return nil
+    end
+end
+
+-- If Rayfield is already present in environment (user forgot to paste) we won't error yet.
+-- We'll prompt for key first (fallback custom prompt) and only require Rayfield when creating UI.
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
+local coreGui = game:GetService("CoreGui")
+
+-- Create simple key prompt GUI (in CoreGui so it's always visible)
+local function createKeyPrompt(onSuccess)
+    -- cleanup previous if exists
+    if coreGui:FindFirstChild("Longdepzai_KeyPrompt") then
+        coreGui.Longdepzai_KeyPrompt:Destroy()
+    end
+
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "Longdepzai_KeyPrompt"
+    sg.ResetOnSpawn = false
+    sg.Parent = coreGui
+
+    local bg = Instance.new("Frame")
+    bg.Name = "BG"
+    bg.AnchorPoint = Vector2.new(0.5,0.5)
+    bg.Size = UDim2.new(0,420,0,180)
+    bg.Position = UDim2.new(0.5,0,0.18,0) -- near top center
+    bg.BackgroundColor3 = Color3.fromRGB(18,18,20)
+    bg.BackgroundTransparency = 0
+    bg.BorderSizePixel = 0
+    bg.Parent = sg
+    bg.ClipsDescendants = true
+    bg.Active = true
+    bg.Draggable = true
+
+    local title = Instance.new("TextLabel")
+    title.Parent = bg
+    title.Size = UDim2.new(1,-20,0,36)
+    title.Position = UDim2.new(0,10,0,10)
+    title.BackgroundTransparency = 1
+    title.Text = "Longdepzai Hub - Nhập Key"
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 20
+    title.TextColor3 = Color3.fromRGB(245,245,245)
+    title.TextXAlignment = Enum.TextXAlignment.Left
+
+    local note = Instance.new("TextLabel")
+    note.Parent = bg
+    note.Size = UDim2.new(1,-20,0,28)
+    note.Position = UDim2.new(0,10,0,42)
+    note.BackgroundTransparency = 1
+    note.Text = "Nhập key để sử dụng menu. Nếu bạn muốn lưu key, script sẽ cố lưu (nếu môi trường hỗ trợ)."
+    note.Font = Enum.Font.Gotham
+    note.TextSize = 13
+    note.TextColor3 = Color3.fromRGB(200,200,200)
+    note.TextXAlignment = Enum.TextXAlignment.Left
+
+    local inputBox = Instance.new("TextBox")
+    inputBox.Parent = bg
+    inputBox.Size = UDim2.new(1,-20,0,36)
+    inputBox.Position = UDim2.new(0,10,0,76)
+    inputBox.Text = ""
+    inputBox.PlaceholderText = "Nhập key ở đây..."
+    inputBox.Font = Enum.Font.Gotham
+    inputBox.TextSize = 18
+    inputBox.TextColor3 = Color3.fromRGB(20,20,20)
+    inputBox.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    inputBox.ClearTextOnFocus = false
+
+    local submit = Instance.new("TextButton")
+    submit.Parent = bg
+    submit.Size = UDim2.new(0,120,0,34)
+    submit.Position = UDim2.new(1,-130,1,-44)
+    submit.AnchorPoint = Vector2.new(0,0)
+    submit.Text = "Xác nhận"
+    submit.Font = Enum.Font.GothamBold
+    submit.TextSize = 16
+    submit.BackgroundColor3 = Color3.fromRGB(60,180,120)
+    submit.TextColor3 = Color3.fromRGB(255,255,255)
+
+    local cancel = Instance.new("TextButton")
+    cancel.Parent = bg
+    cancel.Size = UDim2.new(0,80,0,34)
+    cancel.Position = UDim2.new(1,-220,1,-44)
+    cancel.Text = "Đóng"
+    cancel.Font = Enum.Font.Gotham
+    cancel.TextSize = 14
+    cancel.BackgroundColor3 = Color3.fromRGB(180,60,60)
+    cancel.TextColor3 = Color3.fromRGB(255,255,255)
+
+    local msg = Instance.new("TextLabel")
+    msg.Parent = bg
+    msg.Size = UDim2.new(1,-20,0,22)
+    msg.Position = UDim2.new(0,10,1,-24)
+    msg.BackgroundTransparency = 1
+    msg.Text = ""
+    msg.Font = Enum.Font.Gotham
+    msg.TextSize = 14
+    msg.TextColor3 = Color3.fromRGB(255,80,80)
+    msg.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- small function to show message (with optional auto-clear)
+    local function showMsg(text, duration)
+        msg.Text = text
+        if duration and duration > 0 then
+            delay(duration, function()
+                if msg and msg.Parent then
+                    msg.Text = ""
+                end
+            end)
+        end
+    end
+
+    -- attempt to pre-fill with saved key (if exists)
+    local saved = try_load_saved_key()
+    if saved and type(saved) == "string" and saved ~= "" then
+        inputBox.Text = saved
+    end
+
+    -- submit handler
+    local function doSubmit()
+        local entered = tostring(inputBox.Text or "")
+        if entered == REQUIRED_KEY then
+            -- save if possible
+            pcall(function() try_save_key(entered) end)
+            -- try Rayfield notify if available
+            local okNotify = pcall(function()
+                if Rayfield and Rayfield:Notify then
+                    Rayfield:Notify({Title = "Longdepzai", Content = "Key hợp lệ. Đang tải menu...", Duration = 3})
+                end
+            end)
+            -- destroy prompt
+            if sg and sg.Parent then sg:Destroy() end
+            -- callback success
+            if type(onSuccess) == "function" then
+                pcall(onSuccess)
+            end
+        else
+            -- wrong key: show red message + try to notify via Rayfield if available
+            showMsg("Key không hợp lệ — vui lòng kiểm tra và thử lại.", 0)
+            -- visual shake animation
+            spawn(function()
+                local origPos = bg.Position
+                for i = 1,6 do
+                    bg.Position = origPos + UDim2.new(0, (i%2==0 and 6 or -6), 0, 0)
+                    wait(0.03)
+                end
+                bg.Position = origPos
+            end)
+            pcall(function()
+                if Rayfield and Rayfield:Notify then
+                    Rayfield:Notify({Title = "Longdepzai", Content = "Key sai. Nếu bạn cần, key: 'longdepzaihub'", Duration = 4})
+                end
+            end)
+        end
+    end
+
+    submit.MouseButton1Click:Connect(doSubmit)
+    inputBox.FocusLost:Connect(function(enter)
+        if enter then
+            doSubmit()
+        end
+    end)
+    cancel.MouseButton1Click:Connect(function()
+        if sg and sg.Parent then sg:Destroy() end
+    end)
+
+    -- return object so caller can close if needed
+    return {
+        ScreenGui = sg,
+        Submit = doSubmit,
+        Close = function()
+            if sg and sg.Parent then sg:Destroy() end
+        end,
+        SetMessage = showMsg
+    }
+end
+
+-- MAIN FLOW:
+-- 1) Show key prompt. On success, continue to build Rayfield window UI.
+local function buildUiAfterKey()
+    -- Ensure Rayfield exists
+    if not Rayfield then
+        error("Rayfield not found. Paste Rayfield loadstring above this script and run again.")
+    end
+
+    -- Create window (KeySystem disabled because we handle key externally)
+    local Window = Rayfield:CreateWindow({
+        Name = "Longdepzai | city lor",
+        LoadingTitle = "Longdepzai Hub",
+        LoadingSubtitle = "city lor",
+        ConfigurationSaving = {
+            Enabled = true,
+            FolderName = "longdepzai_config",
+            FileName = "settings"
+        },
+        Discord = {Enabled = false},
+        KeySystem = false
+    })
+
+    -- Helper: seven-color stripe
+    local function createSevenColorStripe(parent)
+        local stripeFrame = Instance.new("Frame")
+        stripeFrame.Name = "SevenColorStripe"
+        stripeFrame.Size = UDim2.new(1,0,0,8)
+        stripeFrame.Position = UDim2.new(0,0,0,0)
+        stripeFrame.BackgroundTransparency = 1
+        stripeFrame.Parent = parent
+
+        local colors = {
+            Color3.fromRGB(255,0,0),
+            Color3.fromRGB(255,127,0),
+            Color3.fromRGB(255,255,0),
+            Color3.fromRGB(0,255,0),
+            Color3.fromRGB(0,255,255),
+            Color3.fromRGB(0,0,255),
+            Color3.fromRGB(139,0,255)
+        }
+        local width = 1/#colors
+        for i, c in ipairs(colors) do
+            local s = Instance.new("Frame")
+            s.Size = UDim2.new(width, 0, 1, 0)
+            s.Position = UDim2.new((i-1)*width, 0, 0, 0)
+            s.BackgroundColor3 = c
+            s.BorderSizePixel = 0
+            s.Parent = stripeFrame
+        end
+        return stripeFrame
+    end
+
+    -- Floating open button GUI (top-center draggable)
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "Longdepzai_OpenButtonGui"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = coreGui
+
+    local openBtn = Instance.new("ImageButton")
+    openBtn.Name = "OpenMenuButton"
+    openBtn.Size = UDim2.new(0,64,0,64)
+    openBtn.Position = UDim2.new(0.5, -32, 0, 10) -- top-center
+    openBtn.AnchorPoint = Vector2.new(0.5,0)
+    openBtn.Image = "rbxassetid://79809536246322"
+    openBtn.BackgroundTransparency = 0
+    openBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    openBtn.BorderSizePixel = 0
+    openBtn.Parent = screenGui
+    openBtn.Active = true
+    openBtn.Draggable = true
+
+    local uiStroke = Instance.new("UIStroke")
+    uiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    uiStroke.Thickness = 2
+    uiStroke.Color = Color3.fromRGB(255,255,255)
+    uiStroke.Parent = openBtn
+
+    openBtn.MouseButton1Click:Connect(function()
+        pcall(function()
+            if Window and Window.Toggle then
+                Window:Toggle()
+            elseif Rayfield and Rayfield.Toggle then
+                Rayfield:Toggle()
+            else
+                -- fallback: toggle any GUI that seems Rayfield-like
+                for _, v in pairs(coreGui:GetChildren()) do
+                    if v.Name:lower():find("rayfield") then
+                        v.Enabled = not v.Enabled
+                    end
+                end
+            end
+        end)
+    end)
+
+    -- Create tabs
+    local tab1 = Window:CreateTab("Tab 1 - Farm Boss")
+    local tab2 = Window:CreateTab("Tab 2 - PvP")
+    local tab3 = Window:CreateTab("Tab 3 - Aimbot")
+    local tab4 = Window:CreateTab("Tab 4 - Speed")
+    local tab5 = Window:CreateTab("Tab 5 - Jump")
+    local tab6 = Window:CreateTab("Tab 6 - Damage")
+
+    -- Tab 1
+    tab1:CreateSection("Boss Farming")
+    tab1:CreateButton({
+        Name = "Fram Boss (stub)",
+        Callback = function()
+            print("[Longdepzai] Fram Boss pressed - placeholder action (no cheat performed).")
+        end
+    })
+    tab1:CreateToggle({
+        Name = "Spam Attack (stub)",
+        Value = false,
+        Flag = "SpamAttack",
+        Callback = function(state)
+            print("[Longdepzai] Spam Attack toggled:", state)
+        end
+    })
+    tab1:CreateToggle({
+        Name = "Auto Pickup (stub)",
+        Value = false,
+        Flag = "AutoPickup",
+        Callback = function(state)
+            print("[Longdepzai] Auto Pickup toggled:", state)
+        end
+    })
+    tab1:CreateDropdown({
+        Name = "Chọn vũ khí",
+        Options = {"bá vương kích", "Phật", "bạch long", "Hắc long", "Võ đang kiếm pháp"},
+        CurrentOption = "bá vương kích",
+        Multiple = false,
+        Flag = "WeaponSelect",
+        Callback = function(opt)
+            print("[Longdepzai] Weapon selected:", opt)
+        end
+    })
+    tab1:CreateToggle({
+        Name = "Giao hàng (stub)",
+        Value = false,
+        Flag = "Delivery",
+        Callback = function(state)
+            print("[Longdepzai] Delivery toggled:", state)
+        end
+    })
+
+    -- Tab 2
+    tab2:CreateSection("PvP Tools (safe stubs)")
+    tab2:CreateToggle({
+        Name = "Xoay 360 (visual stub)",
+        Value = false,
+        Flag = "Spin360",
+        Callback = function(state)
+            print("[Longdepzai] Spin360 toggled:", state)
+        end
+    })
+    tab2:CreateToggle({
+        Name = "Spam đánh (stub)",
+        Value = false,
+        Flag = "SpamHit",
+        Callback = function(state)
+            print("[Longdepzai] Spam Hit toggled:", state)
+        end
+    })
+    tab2:CreateSlider({
+        Name = "Hitbox Power (1-100) (visual only)",
+        Range = {1,100},
+        Increment = 1,
+        Suffix = "",
+        Value = 50,
+        Flag = "HitboxSlider",
+        Callback = function(value)
+            print("[Longdepzai] Hitbox slider value:", value)
+        end
+    })
+
+    -- Tab 3
+    tab3:CreateSection("Aimbot (VISUAL STUB ONLY)")
+    tab3:CreateToggle({
+        Name = "Aimbot (visual stub)",
+        Value = false,
+        Flag = "Aimbot",
+        Callback = function(state)
+            print("[Longdepzai] Aimbot toggled (visual stub):", state)
+        end
+    })
+    tab3:CreateSlider({
+        Name = "Target Radius (visual)",
+        Range = {10,200},
+        Increment = 1,
+        Value = 80,
+        Flag = "AimbotRadius",
+        Callback = function(v)
+            print("[Longdepzai] Aimbot radius:", v)
+        end
+    })
+
+    -- Tab 4
+    tab4:CreateSection("Tốc độ")
+    tab4:CreateSlider({
+        Name = "Tốc độ (1-100)",
+        Range = {1,100},
+        Increment = 1,
+        Value = 16,
+        Flag = "SpeedSlider",
+        Callback = function(value)
+            print("[Longdepzai] Speed slider changed to:", value)
+        end
+    })
+    tab4:CreateToggle({
+        Name = "Enable Speed (stub)",
+        Value = false,
+        Flag = "EnableSpeed",
+        Callback = function(state)
+            print("[Longdepzai] Enable Speed toggled:", state)
+        end
+    })
+
+    -- Tab 5
+    tab5:CreateSection("Nhảy cao")
+    tab5:CreateSlider({
+        Name = "Jump Height (1-100)",
+        Range = {1,100},
+        Increment = 1,
+        Value = 50,
+        Flag = "JumpSlider",
+        Callback = function(val)
+            print("[Longdepzai] Jump slider:", val)
+        end
+    })
+    tab5:CreateToggle({
+        Name = "Enable High Jump (stub)",
+        Value = false,
+        Flag = "EnableJump",
+        Callback = function(state)
+            print("[Longdepzai] High Jump toggled:", state)
+        end
+    })
+
+    -- Tab 6
+    tab6:CreateSection("Dame")
+    tab6:CreateToggle({
+        Name = "Show Damage Numbers (local)",
+        Value = false,
+        Flag = "ShowDamage",
+        Callback = function(state)
+            print("[Longdepzai] Show Damage toggled:", state)
+        end
+    })
+    tab6:CreateSlider({
+        Name = "Damage Display Value (visual)",
+        Range = {1,10000},
+        Increment = 1,
+        Value = 100,
+        Flag = "DamageValue",
+        Callback = function(v)
+            print("[Longdepzai] Damage value set to:", v)
+        end
+    })
+
+    -- Attach header visuals (best-effort)
+    local function attachHeaderVisuals()
+        for _, child in ipairs(coreGui:GetChildren()) do
+            if child.Name:lower():find("rayfield") or child.Name:lower():find("longdepzai") then
+                local mainFrame = child:FindFirstChildWhichIsA("Frame", true)
+                if mainFrame then
+                    local header = Instance.new("Frame")
+                    header.Name = "LongdepzaiHeader"
+                    header.Size = UDim2.new(1,0,0,36)
+                    header.Position = UDim2.new(0,0,0,0)
+                    header.BackgroundColor3 = Color3.fromRGB(255,245,247)
+                    header.BorderSizePixel = 0
+                    header.Parent = mainFrame
+
+                    local title = Instance.new("TextLabel")
+                    title.Name = "HeaderTitle"
+                    title.Size = UDim2.new(1, -8, 1, 0)
+                    title.Position = UDim2.new(0,4,0,0)
+                    title.BackgroundTransparency = 1
+                    title.Text = "Longdepzai | city lor"
+                    title.Font = Enum.Font.GothamBold
+                    title.TextSize = 18
+                    title.TextColor3 = Color3.fromRGB(60,60,60)
+                    title.TextXAlignment = Enum.TextXAlignment.Left
+                    title.Parent = header
+
+                    createSevenColorStripe(mainFrame)
+                    return
+                end
+            end
+        end
+    end
+    delay(0.6, function() pcall(attachHeaderVisuals) end)
+
+    -- Save cleanup function
+    local function cleanup()
+        if screenGui then screenGui:Destroy() end
+        for _, v in pairs(coreGui:GetChildren()) do
+            if v.Name == "Longdepzai_KeyPrompt" then pcall(function() v:Destroy() end) end
+        end
+        print("[Longdepzai] UI cleaned up.")
+    end
+    _G.Longdepzai_Cleanup = cleanup
+
+    -- Notify user via Rayfield if possible
+    pcall(function()
+        if Rayfield and Rayfield:Notify then
+            Rayfield:Notify({Title = "Longdepzai", Content = "UI đã sẵn sàng.", Duration = 3})
+        end
+    end)
+
+    print("[Longdepzai] UI loaded after key validation.")
+end
+
+-- Show the key prompt. If saved key matches, bypass prompt automatically.
+local savedKey = try_load_saved_key()
+if savedKey and tostring(savedKey) == REQUIRED_KEY then
+    -- skip prompt, build UI immediately
+    pcall(buildUiAfterKey)
+else
+    -- show prompt and on success build UI
+    local prompt = createKeyPrompt(function()
+        pcall(buildUiAfterKey)
+    end)
+end
+
+-- End of file
