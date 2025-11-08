@@ -1,0 +1,386 @@
+-- LongDepzai Hub — Purple Edition (Client-side simulation, safe)
+-- Requirements: executor cho phép HttpGet (để load Rayfield).
+-- LƯU Ý: Đây là bản mô phỏng CLIENT-SIDE: không auto-teleport, không auto-attack server, không nhặt đồ server, không thay đổi server-side vehicle speed.
+
+-- ===== Config =====
+local RAYFIELD_URL = 'https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua'
+local THEME_ACCENT = Color3.fromRGB(75,0,130) -- deep purple
+local LOCAL_BOSS_NAME = "BOSS"
+local LOCAL_BOSS_MAX_HP = 5000
+local LOCAL_MONEY_CAP = 1000000000000 -- 1T
+
+-- ===== Services & helpers =====
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local function Character() return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait() end
+
+local function tryLoadRayfield()
+    local ok, lib = pcall(function() return loadstring(game:HttpGet(RAYFIELD_URL))() end)
+    return ok and lib or nil
+end
+
+local Rayfield = tryLoadRayfield()
+if not Rayfield then
+    error("Không load được Rayfield. Hãy dùng executor hỗ trợ HttpGet.")
+end
+
+-- ===== UI window (auto-open, no open-button) =====
+local Window = Rayfield:CreateWindow({
+    Name = "Long Depzai Hub",
+    LoadingTitle = "Long Depzai Hub",
+    LoadingSubtitle = "Purple Edition (Simulation)",
+    ConfigurationSaving = { Enabled = true, FolderName = "LongDepzaiHub", FileName = "Config" },
+    Theme = "Dark"
+})
+-- header (purple accent)
+Window:CreateSection("Long Depzai Hub — Purple • Simulation")
+
+-- ===== State =====
+local state = {
+    farmLV = false,
+    farmMoney = false,
+    spin360 = false,
+    spamAttack = false,
+    farmBoss = false,
+    god = false,
+    fakeMoney = false,
+    heal = false,
+    fly = false,
+    hitboxOn = false,
+    hitboxSize = 10, -- default
+    vehicleSpeedBoost = false,
+    vehicleSpeedValue = 1000 -- default in "km/h" for display only
+}
+local localMoney = 0
+
+-- ===== Boss local model helper (purely local visual & Humanoid) =====
+local function ensureLocalBoss()
+    local exist = workspace:FindFirstChild("LD_LocalBoss")
+    if exist and exist:FindFirstChildWhichIsA("Humanoid") then
+        return exist
+    end
+
+    local boss = Instance.new("Model")
+    boss.Name = "LD_LocalBoss"
+    boss.Parent = workspace
+
+    local root = Instance.new("Part")
+    root.Name = "HumanoidRootPart"
+    root.Size = Vector3.new(4,4,4)
+    root.Position = (Character() and Character():FindFirstChild("HumanoidRootPart") and Character().HumanoidRootPart.Position + Vector3.new(0,0,-15)) or Vector3.new(0,5,0)
+    root.Anchored = false
+    root.CanCollide = true
+    root.Parent = boss
+
+    local head = Instance.new("Part")
+    head.Name = "Head"
+    head.Size = Vector3.new(2,2,2)
+    head.Position = root.Position + Vector3.new(0,3,0)
+    head.Parent = boss
+    head.CanCollide = false
+
+    local hum = Instance.new("Humanoid")
+    hum.Name = "Humanoid"
+    hum.MaxHealth = LOCAL_BOSS_MAX_HP
+    hum.Health = LOCAL_BOSS_MAX_HP
+    hum.Parent = boss
+
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = head
+    weld.Part1 = root
+    weld.Parent = root
+
+    -- Billboard (name red + HPbar)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "LD_BossBillboard"
+    billboard.Size = UDim2.new(0,220,0,80)
+    billboard.AlwaysOnTop = true
+    billboard.Adornee = head
+    billboard.Parent = head
+
+    local frame = Instance.new("Frame", billboard)
+    frame.Size = UDim2.new(1,0,1,0)
+    frame.BackgroundTransparency = 0.4
+    frame.BackgroundColor3 = Color3.fromRGB(30,30,35)
+    frame.BorderSizePixel = 0
+
+    local nameLbl = Instance.new("TextLabel", frame)
+    nameLbl.Size = UDim2.new(0,140,0,24)
+    nameLbl.Position = UDim2.new(0,8,0,6)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Text = LOCAL_BOSS_NAME
+    nameLbl.TextColor3 = Color3.fromRGB(255,50,50)
+    nameLbl.Font = Enum.Font.SourceSansBold
+    nameLbl.TextScaled = true
+
+    local hpBg = Instance.new("Frame", frame)
+    hpBg.Size = UDim2.new(0,200,0,14)
+    hpBg.Position = UDim2.new(0,8,0,38)
+    hpBg.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    hpBg.BorderSizePixel = 0
+
+    local hpFill = Instance.new("Frame", hpBg)
+    hpFill.Name = "HPFill"
+    hpFill.Size = UDim2.new(1,0,1,0)
+    hpFill.BackgroundColor3 = Color3.fromRGB(200,30,30)
+    hpFill.BorderSizePixel = 0
+
+    return boss
+end
+
+local localBoss = ensureLocalBoss()
+
+-- ===== Hitbox visual (safe local sphere attached to player) =====
+local hitboxPart
+local function createHitboxPart()
+    if hitboxPart and hitboxPart.Parent then return hitboxPart end
+    hitboxPart = Instance.new("Part")
+    hitboxPart.Name = "LD_Hitbox"
+    hitboxPart.Shape = Enum.PartType.Ball
+    hitboxPart.Anchored = false
+    hitboxPart.CanCollide = false
+    hitboxPart.Transparency = 0.6
+    hitboxPart.Material = Enum.Material.Neon
+    hitboxPart.Color = Color3.fromRGB(180,30,180) -- purple neon
+    hitboxPart.Parent = workspace
+    return hitboxPart
+end
+
+local function updateHitbox()
+    if not hitboxPart then return end
+    local char = Character()
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if root then
+        hitboxPart.Size = Vector3.new(state.hitboxSize, state.hitboxSize, state.hitboxSize)
+        hitboxPart.CFrame = root.CFrame
+    end
+end
+
+-- ===== UI Tabs & Controls =====
+local Tabs = {}
+Tabs.Farm = Window:CreateTab("⚙️ Farm")
+Tabs.Farm:CreateToggle({ Name = "Farm Level (simulate)", CurrentValue = false, Flag = "FarmLV", Callback = function(v) state.farmLV = v end})
+Tabs.Farm:CreateToggle({ Name = "Farm Boss (circle 3 studs when active, simulate)", CurrentValue = false, Flag = "FarmBoss", Callback = function(v) state.farmBoss = v end})
+
+Tabs.Player = Window:CreateTab("🧍 Player")
+Tabs.Player:CreateToggle({ Name = "Bất tử (simulate)", CurrentValue = false, Flag = "God", Callback = function(v) state.god = v end})
+Tabs.Player:CreateToggle({ Name = "Tiền ảo (simulate to 1T)", CurrentValue = false, Flag = "FakeMoney", Callback = function(v) state.fakeMoney = v end})
+Tabs.Player:CreateToggle({ Name = "Hồi Máu (+60/3s, simulate)", CurrentValue = false, Flag = "Heal", Callback = function(v) state.heal = v end})
+Tabs.Player:CreateToggle({ Name = "Fly (simulate)", CurrentValue = false, Flag = "Fly", Callback = function(v) state.fly = v end})
+Tabs.Player:CreateLabel("Local Money: 0")
+local moneyLabel = Tabs.Player:CreateLabel("Local Money: 0")
+
+Tabs.PvP = Window:CreateTab("⚔️ PvP")
+Tabs.PvP:CreateToggle({ Name = "Xoay 360°", CurrentValue = false, Flag = "Spin", Callback = function(v) state.spin360 = v end})
+Tabs.PvP:CreateToggle({ Name = "Spam đánh (simulate)", CurrentValue = false, Flag = "Spam", Callback = function(v) state.spamAttack = v end})
+Tabs.PvP:CreateToggle({ Name = "Hitbox (visual + simulate dmg)", CurrentValue = false, Flag = "HitboxOn", Callback = function(v)
+    state.hitboxOn = v
+    if v then
+        createHitboxPart()
+        hitboxPart.Transparency = 0.6
+    else
+        if hitboxPart then pcall(function() hitboxPart:Destroy() end) end
+        hitboxPart = nil
+    end
+end})
+Tabs.PvP:CreateSlider({ Name = "Hitbox size (1-100 studs)", Range = {1,100}, Increment = 1, CurrentValue = 10, Flag = "HitboxSize", Callback = function(val) state.hitboxSize = val end })
+Tabs.PvP:CreateToggle({ Name = "Tăng tốc độ xe (simulate up to 5000 km/h)", CurrentValue = false, Flag = "VehBoost", Callback = function(v) state.vehicleSpeedBoost = v end })
+Tabs.PvP:CreateSlider({ Name = "Vehicle speed (km/h) display", Range = {0,5000}, Increment = 10, CurrentValue = 1000, Flag = "VehSpeed", Callback = function(val) state.vehicleSpeedValue = val end })
+
+-- Attack button (manual): when pressed, check nearby units within hitbox and simulate damage
+Tabs.PvP:CreateButton({ Name = "Attack (manual) — will damage units inside hitbox (simulate)", Callback = function()
+    local char = Character()
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    -- scan workspace for models with Humanoid that are not players
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChildWhichIsA("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
+            local owner = Players:GetPlayerFromCharacter(obj)
+            if not owner then
+                local dist = (obj.HumanoidRootPart.Position - root.Position).Magnitude
+                if dist <= state.hitboxSize then
+                    -- simulate damage: reduce only local humanoid if it's local boss (LD_LocalBoss)
+                    local hum = obj:FindFirstChildWhichIsA("Humanoid")
+                    if hum and obj.Name == "LD_LocalBoss" then
+                        hum.Health = math.max(0, hum.Health - 50) -- simulated damage
+                        -- floating damage text
+                        local dmg = Instance.new("BillboardGui")
+                        dmg.Size = UDim2.new(0,100,0,40)
+                        dmg.Adornee = obj:FindFirstChild("Head") or obj:FindFirstChildWhichIsA("BasePart")
+                        dmg.AlwaysOnTop = true
+                        dmg.Parent = workspace.CurrentCamera
+                        local txt = Instance.new("TextLabel", dmg)
+                        txt.Size = UDim2.new(1,0,1,0)
+                        txt.BackgroundTransparency = 1
+                        txt.Text = "-50"
+                        txt.TextColor3 = Color3.fromRGB(255,100,100)
+                        txt.TextScaled = true
+                        delay(0.8, function() pcall(function() dmg:Destroy() end) end)
+                    else
+                        -- if other local NPC, show floating damage only
+                        local part = obj:FindFirstChild("Head") or obj:FindFirstChildWhichIsA("BasePart")
+                        if part then
+                            local dmg = Instance.new("BillboardGui")
+                            dmg.Size = UDim2.new(0,100,0,40)
+                            dmg.Adornee = part
+                            dmg.AlwaysOnTop = true
+                            dmg.Parent = workspace.CurrentCamera
+                            local txt = Instance.new("TextLabel", dmg)
+                            txt.Size = UDim2.new(1,0,1,0)
+                            txt.BackgroundTransparency = 1
+                            txt.Text = "-50"
+                            txt.TextColor3 = Color3.fromRGB(255,100,100)
+                            txt.TextScaled = true
+                            delay(0.8, function() pcall(function() dmg:Destroy() end) end)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end})
+
+-- Loot simulate button (manual)
+Tabs.Boss = Window:CreateTab("🐉 Boss")
+Tabs.Boss:CreateButton({ Name = "Simulate Loot (manual)", Callback = function()
+    Rayfield:Notify({Title="Loot", Content="Loot collected (simulated).", Duration=2})
+end})
+
+-- ===== Behaviors: visual updates & simulated loops =====
+
+-- update boss HP UI continuously (local boss)
+spawn(function()
+    while true do
+        local boss = workspace:FindFirstChild("LD_LocalBoss")
+        if boss and boss:FindFirstChildWhichIsA("Humanoid") then
+            local hum = boss:FindFirstChildWhichIsA("Humanoid")
+            local hp = math.max(0, math.floor(hum.Health))
+            -- update billboard HP
+            local head = boss:FindFirstChild("Head")
+            if head then
+                local bb = head:FindFirstChild("LD_BossBillboard")
+                if bb and bb:FindFirstChildWhichIsA("Frame") then
+                    local frame = bb:FindFirstChildWhichIsA("Frame")
+                    local hpFill = frame:FindFirstChild("HPFill")
+                    if hpFill and hum.MaxHealth > 0 then
+                        local pct = hum.Health / hum.MaxHealth
+                        hpFill.Size = UDim2.new(math.clamp(pct,0,1),0,1,0)
+                    end
+                end
+            end
+            -- if died simulate loot auto (if farmBoss tick enabled and hum.Health==0)
+            if hum.Health <= 0 and state.farmBoss then
+                -- simulate moving to boss and picking up loot (purely visual)
+                Rayfield:Notify({Title="Boss", Content="BOSS defeated! Loot simulated.", Duration=2})
+                -- respawn local boss after few seconds
+                delay(3, function()
+                    if boss and boss.Parent then boss:Destroy() end
+                    wait(0.5)
+                    ensureLocalBoss()
+                end)
+            end
+        end
+        wait(0.25)
+    end
+end)
+
+-- farmBoss visual circle while toggle on (NO auto-teleport/NO auto-attack)
+spawn(function()
+    local angle = 0
+    while true do
+        if state.farmBoss then
+            -- ensure local boss exists
+            local boss = workspace:FindFirstChild("LD_LocalBoss")
+            if boss and boss:FindFirstChild("HumanoidRootPart") then
+                -- create a local visual marker for circle (without moving player)
+                angle = angle + math.rad(6)
+                -- you can optionally animate a small marker around boss to show where player WOULD circle
+                -- (we keep it visual only)
+                -- create / update marker
+                if not workspace:FindFirstChild("LD_BossCircleMarker") then
+                    local m = Instance.new("Part")
+                    m.Name = "LD_BossCircleMarker"
+                    m.Anchored = true
+                    m.CanCollide = false
+                    m.Size = Vector3.new(0.5,0.5,0.5)
+                    m.Transparency = 0.3
+                    m.Material = Enum.Material.Neon
+                    m.Color = THEME_ACCENT
+                    m.Parent = workspace
+                end
+                local marker = workspace:FindFirstChild("LD_BossCircleMarker")
+                if marker then
+                    local center = boss.HumanoidRootPart.Position
+                    local radius = 3
+                    marker.Position = center + Vector3.new(math.cos(angle)*radius, 2, math.sin(angle)*radius)
+                end
+            end
+        else
+            if workspace:FindFirstChild("LD_BossCircleMarker") then
+                pcall(function() workspace.LD_BossCircleMarker:Destroy() end)
+            end
+        end
+        wait(0.05)
+    end
+end)
+
+-- Hitbox update loop (visual follow & size)
+spawn(function()
+    while true do
+        if state.hitboxOn then
+            createHitboxPart()
+            hitboxPart.Transparency = math.clamp(0.6 - (state.hitboxSize/200), 0.2, 0.8)
+            hitboxPart.Size = Vector3.new(state.hitboxSize, state.hitboxSize, state.hitboxSize)
+            local root = Character():FindFirstChild("HumanoidRootPart")
+            if root then hitboxPart.CFrame = root.CFrame end
+        else
+            if hitboxPart then pcall(function() hitboxPart:Destroy() end); hitboxPart = nil end
+        end
+        wait(0.06)
+    end
+end)
+
+-- Fake money loop (simulate only)
+spawn(function()
+    while true do
+        if state.fakeMoney then
+            localMoney = math.min(LOCAL_MONEY_CAP, localMoney + math.floor(LOCAL_MONEY_CAP/180))
+            moneyLabel:Set("Local Money: " .. tostring(localMoney))
+        end
+        wait(1)
+    end
+end)
+
+-- Heal loop (simulate)
+spawn(function()
+    while true do
+        if state.heal then
+            local hum = Character():FindFirstChildWhichIsA("Humanoid")
+            if hum then pcall(function() hum.Health = math.min(hum.MaxHealth, hum.Health + 60) end) end
+        end
+        wait(3)
+    end
+end)
+
+-- Spin 360 visual (rotate root CFrame locally)
+spawn(function()
+    while true do
+        if state.spin360 then
+            local root = Character():FindFirstChild("HumanoidRootPart")
+            if root then
+                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(10), 0)
+            end
+        end
+        wait(0.05)
+    end
+end)
+
+-- Vehicle speed simulation: only display/notify, NOT modify server vehicle
+Tabs.PvP:CreateButton({ Name = "Show Vehicle Speed (simulated)", Callback = function()
+    Rayfield:Notify({ Title="Vehicle", Content = "Simulated speed: "..tostring(state.vehicleSpeedValue).." km/h", Duration = 3 })
+end})
+
+-- Final notify
+Rayfield:Notify({ Title = "LongDepzai Hub", Content = "Purple Edition loaded (client-side simulation). No server modifications.", Duration = 4 })
