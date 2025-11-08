@@ -1,0 +1,279 @@
+--[[ 
+    👹 LongDepzai Hub | City Lor 
+    Fluent style - Red Theme + Rainbow Border + Moveable Button
+    Tác giả: LongDepzai
+--]]
+
+-- Rainbow border loop
+local function rainbowBorder(frame)
+    task.spawn(function()
+        local hue = 0
+        while frame and frame.Parent do
+            hue = (hue + 1) % 360
+            frame.UIStroke.Color = Color3.fromHSV(hue / 360, 1, 1)
+            task.wait(0.05)
+        end
+    end)
+end
+
+-- GUI
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "LongDepzaiHub"
+gui.ResetOnSpawn = false
+
+-- Nút mở menu 👹
+local openBtn = Instance.new("TextButton", gui)
+openBtn.Size = UDim2.new(0, 60, 0, 60)
+openBtn.Position = UDim2.new(0, 30, 0.5, -30)
+openBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+openBtn.Text = "👹"
+openBtn.TextSize = 28
+openBtn.Font = Enum.Font.GothamBold
+openBtn.TextColor3 = Color3.new(1,1,1)
+openBtn.AutoButtonColor = false
+openBtn.BackgroundTransparency = 0.2
+
+Instance.new("UICorner", openBtn).CornerRadius = UDim.new(0, 12)
+local strokeBtn = Instance.new("UIStroke", openBtn)
+strokeBtn.Thickness = 3
+rainbowBorder(openBtn)
+
+-- Cho phép kéo nút
+local dragging, dragInput, dragStart, startPos
+openBtn.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = openBtn.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+openBtn.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		openBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+-- Menu chính
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 400, 0, 300)
+main.Position = UDim2.new(0.5, -200, 0.5, -150)
+main.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
+main.Visible = false
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 15)
+local strokeMain = Instance.new("UIStroke", main)
+strokeMain.Thickness = 4
+rainbowBorder(main)
+
+-- Thanh tiêu đề
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+title.Text = "👹 LongDepzai Hub | City Lor"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+Instance.new("UICorner", title).CornerRadius = UDim.new(0, 12)
+
+-- Nút đóng
+local closeBtn = Instance.new("TextButton", title)
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -35, 0, 5)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "❌"
+closeBtn.TextColor3 = Color3.new(1,1,1)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 16
+
+-- Tabs
+local tabContainer = Instance.new("Frame", main)
+tabContainer.Size = UDim2.new(0, 100, 1, -40)
+tabContainer.Position = UDim2.new(0, 0, 0, 40)
+tabContainer.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+Instance.new("UICorner", tabContainer).CornerRadius = UDim.new(0, 12)
+
+local content = Instance.new("Frame", main)
+content.Size = UDim2.new(1, -100, 1, -40)
+content.Position = UDim2.new(0, 100, 0, 40)
+content.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+Instance.new("UICorner", content).CornerRadius = UDim.new(0, 12)
+
+-- Tab buttons
+local tab1Btn = Instance.new("TextButton", tabContainer)
+tab1Btn.Size = UDim2.new(1, 0, 0, 40)
+tab1Btn.Position = UDim2.new(0, 0, 0, 10)
+tab1Btn.Text = "⚔️ PvP"
+tab1Btn.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+tab1Btn.TextColor3 = Color3.new(1,1,1)
+tab1Btn.Font = Enum.Font.GothamBold
+tab1Btn.TextSize = 16
+
+local tab2Btn = Instance.new("TextButton", tabContainer)
+tab2Btn.Size = UDim2.new(1, 0, 0, 40)
+tab2Btn.Position = UDim2.new(0, 0, 0, 60)
+tab2Btn.Text = "🧱 Fram Lv"
+tab2Btn.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+tab2Btn.TextColor3 = Color3.new(1,1,1)
+tab2Btn.Font = Enum.Font.GothamBold
+tab2Btn.TextSize = 16
+
+-- Nội dung tab
+local tab1 = Instance.new("Frame", content)
+tab1.Size = UDim2.new(1, 0, 1, 0)
+tab1.BackgroundTransparency = 1
+tab1.Visible = true
+
+local tab2 = Instance.new("Frame", content)
+tab2.Size = UDim2.new(1, 0, 1, 0)
+tab2.BackgroundTransparency = 1
+tab2.Visible = false
+
+-- ===== PvP CHỨC NĂNG =====
+local spinning, hitbox, spamming, framLv = false, false, false, false
+
+-- Xoay 360 độ (tốc độ 66)
+local btnSpin = Instance.new("TextButton", tab1)
+btnSpin.Size = UDim2.new(0.9, 0, 0, 35)
+btnSpin.Position = UDim2.new(0.05, 0, 0, 10)
+btnSpin.Text = "Xoay 360 độ [OFF]"
+btnSpin.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+btnSpin.TextColor3 = Color3.new(1,1,1)
+btnSpin.Font = Enum.Font.Gotham
+btnSpin.TextSize = 16
+btnSpin.MouseButton1Click:Connect(function()
+    spinning = not spinning
+    btnSpin.Text = "Xoay 360 độ ["..(spinning and "ON" or "OFF").."]"
+    if spinning then
+        task.spawn(function()
+            while spinning do
+                local char = game.Players.LocalPlayer.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    char.HumanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(66), 0)
+                end
+                task.wait(0.03)
+            end
+        end)
+    end
+end)
+
+-- Hitbox 7 màu
+local btnHitbox = Instance.new("TextButton", tab1)
+btnHitbox.Size = UDim2.new(0.9, 0, 0, 35)
+btnHitbox.Position = UDim2.new(0.05, 0, 0, 55)
+btnHitbox.Text = "Hitbox 7 màu [OFF]"
+btnHitbox.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+btnHitbox.TextColor3 = Color3.new(1,1,1)
+btnHitbox.Font = Enum.Font.Gotham
+btnHitbox.TextSize = 16
+btnHitbox.MouseButton1Click:Connect(function()
+    hitbox = not hitbox
+    btnHitbox.Text = "Hitbox 7 màu ["..(hitbox and "ON" or "OFF").."]"
+    if hitbox then
+        task.spawn(function()
+            while hitbox do
+                for _,v in pairs(game.Players:GetPlayers()) do
+                    if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                        local adorn = v.Character:FindFirstChild("Hitbox") or Instance.new("BoxHandleAdornment")
+                        adorn.Name = "Hitbox"
+                        adorn.Adornee = v.Character.HumanoidRootPart
+                        adorn.Size = Vector3.new(6,6,6)
+                        adorn.AlwaysOnTop = true
+                        adorn.ZIndex = 10
+                        adorn.Color3 = Color3.fromHSV(tick()%5/5,1,1)
+                        adorn.Parent = v.Character
+                    end
+                end
+                task.wait(0.05)
+            end
+            for _,v in pairs(game.Players:GetPlayers()) do
+                if v.Character and v.Character:FindFirstChild("Hitbox") then
+                    v.Character.Hitbox:Destroy()
+                end
+            end
+        end)
+    end
+end)
+
+-- Spam đánh
+local btnSpam = Instance.new("TextButton", tab1)
+btnSpam.Size = UDim2.new(0.9, 0, 0, 35)
+btnSpam.Position = UDim2.new(0.05, 0, 0, 100)
+btnSpam.Text = "Spam đánh [OFF]"
+btnSpam.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+btnSpam.TextColor3 = Color3.new(1,1,1)
+btnSpam.Font = Enum.Font.Gotham
+btnSpam.TextSize = 16
+btnSpam.MouseButton1Click:Connect(function()
+    spamming = not spamming
+    btnSpam.Text = "Spam đánh ["..(spamming and "ON" or "OFF").."]"
+    if spamming then
+        task.spawn(function()
+            while spamming do
+                game:GetService("VirtualUser"):ClickButton1(Vector2.new())
+                task.wait(0.2)
+            end
+        end)
+    end
+end)
+
+-- ===== Fram Lv =====
+local btnFram = Instance.new("TextButton", tab2)
+btnFram.Size = UDim2.new(0.9, 0, 0, 35)
+btnFram.Position = UDim2.new(0.05, 0, 0, 10)
+btnFram.Text = "Fram Lv [OFF]"
+btnFram.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+btnFram.TextColor3 = Color3.new(1,1,1)
+btnFram.Font = Enum.Font.Gotham
+btnFram.TextSize = 16
+btnFram.MouseButton1Click:Connect(function()
+    framLv = not framLv
+    btnFram.Text = "Fram Lv ["..(framLv and "ON" or "OFF").."]"
+    if framLv then
+        task.spawn(function()
+            while framLv do
+                local lp = game.Players.LocalPlayer
+                local char = lp.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    for _,v in pairs(workspace:GetDescendants()) do
+                        if v:FindFirstChild("Humanoid") and not game.Players:GetPlayerFromCharacter(v) then
+                            local hrp = v:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                char.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(0,3,0)
+                                game:GetService("VirtualUser"):ClickButton1(Vector2.new())
+                            end
+                        end
+                    end
+                end
+                task.wait(0.2)
+            end
+        end)
+    end
+end)
+
+-- Tab switching
+tab1Btn.MouseButton1Click:Connect(function()
+    tab1.Visible = true
+    tab2.Visible = false
+end)
+tab2Btn.MouseButton1Click:Connect(function()
+    tab1.Visible = false
+    tab2.Visible = true
+end)
+
+-- Mở / đóng menu
+openBtn.MouseButton1Click:Connect(function()
+    main.Visible = not main.Visible
+end)
+closeBtn.MouseButton1Click:Connect(function()
+    main.Visible = false
+end)
