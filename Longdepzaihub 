@@ -1,0 +1,130 @@
+-- LongDepzai HUB UI DEMO (Fluent-style)
+-- Thiết kế hợp pháp cho Roblox Studio
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+
+-- 🟠 Giao diện gốc
+local ScreenGui = Instance.new("ScreenGui", Players.LocalPlayer:WaitForChild("PlayerGui"))
+ScreenGui.Name = "LongDepzaiHubUI"
+
+-- 🔘 Nút mở menu
+local OpenButton = Instance.new("ImageButton")
+OpenButton.Name = "OpenMenu"
+OpenButton.Parent = ScreenGui
+OpenButton.BackgroundColor3 = Color3.fromRGB(255,255,255)
+OpenButton.BorderSizePixel = 0
+OpenButton.Position = UDim2.new(0.05, 0, 0.5, 0)
+OpenButton.Size = UDim2.new(0, 70, 0, 70)
+OpenButton.Image = "rbxassetid://79809536246322"
+OpenButton.ImageColor3 = Color3.fromRGB(255,255,255)
+
+-- 🪟 Menu chính
+local MenuFrame = Instance.new("Frame")
+MenuFrame.Parent = ScreenGui
+MenuFrame.Size = UDim2.new(0, 500, 0, 320)
+MenuFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
+MenuFrame.BackgroundColor3 = Color3.fromRGB(255, 245, 250)
+MenuFrame.BorderSizePixel = 0
+MenuFrame.Visible = false
+MenuFrame.ClipsDescendants = true
+MenuFrame.Active = true
+
+-- 🌈 Viền 7 màu động
+local Border = Instance.new("UIStroke", MenuFrame)
+Border.Thickness = 3
+Border.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+task.spawn(function()
+	local hue = 0
+	while true do
+		hue += 0.01
+		if hue > 1 then hue = 0 end
+		Border.Color = Color3.fromHSV(hue, 1, 1)
+		task.wait(0.05)
+	end
+end)
+
+-- 👑 Tiêu đề
+local Title = Instance.new("TextLabel")
+Title.Parent = MenuFrame
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(255, 230, 240)
+Title.Text = "🌸 LongDepzai HUB | CityLor"
+Title.TextColor3 = Color3.fromRGB(0, 0, 0)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 20
+
+-- Tabs
+local TabButtons = Instance.new("Frame")
+TabButtons.Parent = MenuFrame
+TabButtons.Size = UDim2.new(1, 0, 0, 40)
+TabButtons.Position = UDim2.new(0, 0, 0, 40)
+TabButtons.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Parent = MenuFrame
+ContentFrame.Size = UDim2.new(1, 0, 1, -80)
+ContentFrame.Position = UDim2.new(0, 0, 0, 80)
+ContentFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+
+local function CreateTabButton(name, order)
+	local btn = Instance.new("TextButton")
+	btn.Name = name
+	btn.Parent = TabButtons
+	btn.Size = UDim2.new(0.2, 0, 1, 0)
+	btn.Position = UDim2.new(0.2 * (order - 1), 0, 0, 0)
+	btn.Text = name
+	btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	btn.TextColor3 = Color3.fromRGB(0, 0, 0)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 16
+	return btn
+end
+
+local tabs = {
+	CreateTabButton("⚔️ PVP", 1),
+	CreateTabButton("💥 Buff Dame", 2),
+	CreateTabButton("📦 Giao Hàng", 3),
+	CreateTabButton("🚀 Scripts", 4),
+	CreateTabButton("🌸 Thông Tin", 5)
+}
+
+-- Nội dung mẫu
+local ContentText = Instance.new("TextLabel")
+ContentText.Parent = ContentFrame
+ContentText.Size = UDim2.new(1, -20, 1, -20)
+ContentText.Position = UDim2.new(0, 10, 0, 10)
+ContentText.BackgroundTransparency = 1
+ContentText.Text = "Chọn tab để xem thông tin!"
+ContentText.TextColor3 = Color3.fromRGB(0, 0, 0)
+ContentText.Font = Enum.Font.Gotham
+ContentText.TextSize = 18
+ContentText.TextWrapped = true
+
+-- Khi bấm tab
+for _,btn in pairs(tabs) do
+	btn.MouseButton1Click:Connect(function()
+		for _,b in pairs(tabs) do b.BackgroundColor3 = Color3.fromRGB(255,255,255) end
+		btn.BackgroundColor3 = Color3.fromRGB(255,230,240)
+		ContentText.Text = "📘 Bạn đang ở tab: " .. btn.Name .. "\n\nChức năng demo hiển thị UI, không can thiệp gameplay."
+	end)
+end
+
+-- 🔘 Bật / Tắt menu
+local isOpen = false
+OpenButton.MouseButton1Click:Connect(function()
+	isOpen = not isOpen
+	if isOpen then
+		MenuFrame.Visible = true
+		MenuFrame.Position = UDim2.new(0.5, -250, 1, 0)
+		TweenService:Create(MenuFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+			Position = UDim2.new(0.5, -250, 0.5, -160)
+		}):Play()
+	else
+		TweenService:Create(MenuFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+			Position = UDim2.new(0.5, -250, 1, 0)
+		}):Play()
+		task.wait(0.4)
+		MenuFrame.Visible = false
+	end
+end)
