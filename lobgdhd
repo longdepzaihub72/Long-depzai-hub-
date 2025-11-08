@@ -1,0 +1,152 @@
+-- Long Depzai Hub | Menu Fluent | By LongDepzai
+-- TikTok: LongDepzaiHub
+
+-- Nút mở menu
+local ScreenGui = Instance.new("ScreenGui")
+local OpenButton = Instance.new("ImageButton")
+
+ScreenGui.Parent = game.CoreGui
+OpenButton.Name = "OpenMenu"
+OpenButton.Parent = ScreenGui
+OpenButton.BackgroundColor3 = Color3.fromRGB(255,255,255)
+OpenButton.BorderSizePixel = 0
+OpenButton.Position = UDim2.new(0.05, 0, 0.5, 0)
+OpenButton.Size = UDim2.new(0, 70, 0, 70)
+OpenButton.Image = "rbxassetid://79809536246322"
+OpenButton.ImageColor3 = Color3.fromRGB(255,255,255)
+OpenButton.AutoButtonColor = true
+OpenButton.Active = true
+
+-- Gọi thư viện Rayfield UI (Fluent Style)
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "LongDepzai HUB | CityLor2",
+    LoadingTitle = "Tiktok : LongDepzaiHub",
+    LoadingSubtitle = "Flower LongDepzaiHub",
+    ConfigurationSaving = {
+       Enabled = false
+    },
+    Discord = {
+       Enabled = false
+    },
+    KeySystem = false,
+})
+
+-------------------------------------------------
+-- 🌸 TAB 1: PVP
+-------------------------------------------------
+local PVP = Window:CreateTab("⚔️ PVP")
+
+local spinToggle = PVP:CreateToggle({
+   Name = "Xoay 360 độ",
+   CurrentValue = false,
+   Flag = "Spin",
+   Callback = function(Value)
+      if Value then
+         local plr = game.Players.LocalPlayer
+         local chr = plr.Character or plr.CharacterAdded:Wait()
+         task.spawn(function()
+            while Value and task.wait() do
+               chr:SetPrimaryPartCFrame(chr.PrimaryPart.CFrame * CFrame.Angles(0, math.rad(66), 0))
+            end
+         end)
+      end
+   end
+})
+
+local spamHit = PVP:CreateToggle({
+   Name = "Spam đánh",
+   CurrentValue = false,
+   Flag = "SpamHit",
+   Callback = function(Value)
+      if Value then
+         task.spawn(function()
+            while Value and task.wait(0.1) do
+               game:GetService("ReplicatedStorage"):FireServer("Attack")
+            end
+         end)
+      end
+   end
+})
+
+-------------------------------------------------
+-- 🐉 TAB 2: Farm Boss
+-------------------------------------------------
+local Boss = Window:CreateTab("🐉 Farm Boss")
+
+local framBoss = Boss:CreateToggle({
+   Name = "Farm Boss",
+   CurrentValue = false,
+   Flag = "FarmBoss",
+   Callback = function(Value)
+      if Value then
+         local plr = game.Players.LocalPlayer
+         local chr = plr.Character or plr.CharacterAdded:Wait()
+         local boss = workspace:FindFirstChild("Boss")
+         if boss then
+            task.spawn(function()
+               while Value and boss and boss:FindFirstChild("HumanoidRootPart") do
+                  chr:PivotTo(boss.HumanoidRootPart.CFrame * CFrame.new(0,3,0) * CFrame.Angles(math.rad(90),0,0))
+                  game:GetService("ReplicatedStorage"):FireServer("Attack")
+                  task.wait(0.1)
+               end
+            end)
+         end
+      end
+   end
+})
+
+local bossHealth = Boss:CreateLabel("Thanh máu Boss: 5000 HP")
+
+-------------------------------------------------
+-- 📦 TAB 3: Giao Hàng
+-------------------------------------------------
+local Delivery = Window:CreateTab("📦 Giao Hàng")
+
+local delivery = Delivery:CreateToggle({
+   Name = "Giao hàng",
+   CurrentValue = false,
+   Flag = "AutoDelivery",
+   Callback = function(Value)
+      if Value then
+         task.spawn(function()
+            while Value do
+               local plr = game.Players.LocalPlayer
+               local chr = plr.Character or plr.CharacterAdded:Wait()
+               -- ví dụ giả lập dịch chuyển
+               chr:PivotTo(workspace:FindFirstChild("Pickup") and workspace.Pickup.CFrame or CFrame.new())
+               task.wait(1)
+               chr:PivotTo(workspace:FindFirstChild("Dropoff") and workspace.Dropoff.CFrame or CFrame.new())
+               task.wait(1)
+            end
+         end)
+      end
+   end
+})
+
+-------------------------------------------------
+-- 🚀 TAB 4: Scripts
+-------------------------------------------------
+local ScriptTab = Window:CreateTab("🚀 Scripts")
+
+local fly = ScriptTab:CreateButton({
+   Name = "Bay",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+   end
+})
+
+-------------------------------------------------
+-- 🌸 TAB 5: Thông tin
+-------------------------------------------------
+local Info = Window:CreateTab("🌸 Thông tin")
+
+Info:CreateLabel("Flower LongDepzaiHub để có nhiều bản xịn hơn")
+
+-------------------------------------------------
+-- Nút mở/đóng menu
+-------------------------------------------------
+OpenButton.MouseButton1Click:Connect(function()
+   Rayfield:ToggleUI()
+end)
