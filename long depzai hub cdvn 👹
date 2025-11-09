@@ -1,0 +1,226 @@
+--// LongDepzai Hub V4 | City Lor 👹
+--// Menu hình chữ nhật | Viền 7 màu | Fram NPC | Tốc độ xoay 200
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local VirtualUser = game:GetService("VirtualUser")
+
+-- Hàm màu cầu vồng 🌈
+local function RainbowColor(speed)
+	local hue = tick() * speed % 1
+	return Color3.fromHSV(hue, 1, 1)
+end
+
+-- GUI chính
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "LongDepzaiHubV4"
+
+-- Nút mở menu 👹
+local openButton = Instance.new("TextButton")
+openButton.Parent = gui
+openButton.Size = UDim2.new(0, 60, 0, 60)
+openButton.Position = UDim2.new(0.05, 0, 0.2, 0)
+openButton.Text = "👹"
+openButton.TextSize = 35
+openButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+openButton.BorderSizePixel = 0
+openButton.Active = true
+openButton.Draggable = true
+
+-- Viền 7 màu quanh nút 👹
+task.spawn(function()
+	while task.wait() do
+		openButton.UIStroke = openButton.UIStroke or Instance.new("UIStroke", openButton)
+		openButton.UIStroke.Thickness = 3
+		openButton.UIStroke.Color = RainbowColor(0.5)
+	end
+end)
+
+-- Menu chính
+local menu = Instance.new("Frame")
+menu.Parent = gui
+menu.Size = UDim2.new(0, 400, 0, 250)
+menu.Position = UDim2.new(0.3, 0, 0.3, 0)
+menu.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+menu.BorderSizePixel = 0
+menu.Visible = false
+
+-- Viền rainbow cho menu
+task.spawn(function()
+	while task.wait() do
+		menu.UIStroke = menu.UIStroke or Instance.new("UIStroke", menu)
+		menu.UIStroke.Thickness = 3
+		menu.UIStroke.Color = RainbowColor(0.5)
+	end
+end)
+
+-- Tiêu đề
+local title = Instance.new("TextLabel", menu)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "LongDepzai Hub | City Lor"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+
+-- Tab khung
+local tabFrame = Instance.new("Frame", menu)
+tabFrame.Size = UDim2.new(1, 0, 0, 35)
+tabFrame.Position = UDim2.new(0, 0, 0.12, 0)
+tabFrame.BackgroundTransparency = 1
+
+local PvPBtn = Instance.new("TextButton", tabFrame)
+PvPBtn.Size = UDim2.new(0, 200, 1, 0)
+PvPBtn.Text = "PvP"
+PvPBtn.TextSize = 18
+PvPBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+
+local FramBtn = Instance.new("TextButton", tabFrame)
+FramBtn.Size = UDim2.new(0, 200, 1, 0)
+FramBtn.Position = UDim2.new(0.5, 0, 0, 0)
+FramBtn.Text = "Fram NPC"
+FramBtn.TextSize = 18
+FramBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+
+-- Nội dung tab
+local PvPFrame = Instance.new("Frame", menu)
+PvPFrame.Size = UDim2.new(1, 0, 1, -80)
+PvPFrame.Position = UDim2.new(0, 0, 0.27, 0)
+PvPFrame.BackgroundTransparency = 1
+PvPFrame.Visible = true
+
+local FramFrame = PvPFrame:Clone()
+FramFrame.Parent = menu
+FramFrame.Visible = false
+
+-- Đổi tab
+PvPBtn.MouseButton1Click:Connect(function() PvPFrame.Visible = true; FramFrame.Visible = false end)
+FramBtn.MouseButton1Click:Connect(function() PvPFrame.Visible = false; FramFrame.Visible = true end)
+
+-- Mở menu 👹
+openButton.MouseButton1Click:Connect(function()
+	menu.Visible = not menu.Visible
+end)
+
+-- ====== TAB 1: PvP ======
+local rotationEnabled, hitboxEnabled, spamEnabled = false, false, false
+local weapon = nil
+
+-- Xoay 360 độ
+local rotateBtn = Instance.new("TextButton", PvPFrame)
+rotateBtn.Size = UDim2.new(0, 180, 0, 30)
+rotateBtn.Position = UDim2.new(0, 20, 0, 10)
+rotateBtn.Text = "Bật Xoay 360°"
+rotateBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+
+rotateBtn.MouseButton1Click:Connect(function()
+	rotationEnabled = not rotationEnabled
+	rotateBtn.Text = rotationEnabled and "Tắt Xoay 360°" or "Bật Xoay 360°"
+	if rotationEnabled then
+		task.spawn(function()
+			while rotationEnabled and task.wait() do
+				if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+					LocalPlayer.Character.HumanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(200), 0)
+				end
+			end
+		end)
+	end
+end)
+
+-- Dropdown chọn vũ khí
+local drop = Instance.new("TextButton", PvPFrame)
+drop.Size = UDim2.new(0, 180, 0, 30)
+drop.Position = UDim2.new(0, 20, 0, 50)
+drop.Text = "Chọn Vũ Khí"
+drop.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+
+local list = {"Phóng","Mã","Ktn","Hngoc","Thương","Kích","Vdkp","Hlong","Định hải","Nhị lang kích","Tông"}
+local listFrame = Instance.new("Frame", drop)
+listFrame.Size = UDim2.new(1, 0, 0, #list * 25)
+listFrame.Position = UDim2.new(0, 0, 1, 0)
+listFrame.BackgroundColor3 = Color3.fromRGB(50, 0, 0)
+listFrame.Visible = false
+
+for _,name in ipairs(list) do
+	local btn = Instance.new("TextButton", listFrame)
+	btn.Size = UDim2.new(1, 0, 0, 25)
+	btn.Text = name
+	btn.MouseButton1Click:Connect(function()
+		weapon = name
+		drop.Text = "Vũ khí: " .. name
+		listFrame.Visible = false
+	end)
+end
+
+drop.MouseButton1Click:Connect(function() listFrame.Visible = not listFrame.Visible end)
+
+-- Hitbox
+local hitBtn = Instance.new("TextButton", PvPFrame)
+hitBtn.Size = UDim2.new(0, 180, 0, 30)
+hitBtn.Position = UDim2.new(0, 20, 0, 90)
+hitBtn.Text = "Bật Hitbox"
+hitBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+
+hitBtn.MouseButton1Click:Connect(function()
+	hitboxEnabled = not hitboxEnabled
+	hitBtn.Text = hitboxEnabled and "Tắt Hitbox" or "Bật Hitbox"
+end)
+
+-- Spam đánh
+local spamBtn = Instance.new("TextButton", PvPFrame)
+spamBtn.Size = UDim2.new(0, 180, 0, 30)
+spamBtn.Position = UDim2.new(0, 20, 0, 130)
+spamBtn.Text = "Bật Spam Đánh"
+spamBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+
+spamBtn.MouseButton1Click:Connect(function()
+	spamEnabled = not spamEnabled
+	spamBtn.Text = spamEnabled and "Tắt Spam Đánh" or "Bật Spam Đánh"
+	if spamEnabled then
+		task.spawn(function()
+			while spamEnabled and task.wait(0.2) do
+				VirtualUser:ClickButton1(Vector2.new())
+			end
+		end)
+	end
+end)
+
+-- ===== TAB 2: Fram NPC =====
+local framBtn = Instance.new("TextButton", FramFrame)
+framBtn.Size = UDim2.new(0, 180, 0, 30)
+framBtn.Position = UDim2.new(0, 20, 0, 20)
+framBtn.Text = "Bật Fram NPC"
+framBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+
+local framActive = false
+
+framBtn.MouseButton1Click:Connect(function()
+	framActive = not framActive
+	framBtn.Text = framActive and "Tắt Fram NPC" or "Bật Fram NPC"
+	if framActive then
+		task.spawn(function()
+			while framActive and task.wait(0.3) do
+				local plrChar = LocalPlayer.Character
+				if not plrChar or not plrChar:FindFirstChild("HumanoidRootPart") then continue end
+				local root = plrChar.HumanoidRootPart
+
+				local nearest
+				local dist = math.huge
+				for _,v in pairs(workspace:GetChildren()) do
+					if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and not Players:GetPlayerFromCharacter(v) then
+						local d = (v.HumanoidRootPart.Position - root.Position).Magnitude
+						if d < dist then
+							dist = d
+							nearest = v
+						end
+					end
+				end
+
+				if nearest then
+					root.CFrame = nearest.HumanoidRootPart.CFrame * CFrame.new(0,3,0)
+					VirtualUser:ClickButton1(Vector2.new())
+				end
+			end
+		end)
+	end
+end)
