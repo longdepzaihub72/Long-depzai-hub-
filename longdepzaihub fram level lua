@@ -1,0 +1,183 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+
+-- GUI
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "FramLevelGUI"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 320, 0, 200)
+frame.Position = UDim2.new(0.35, 0, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true -- Kéo thả
+
+-- Rainbow viền
+local border = Instance.new("UIStroke", frame)
+border.Thickness = 2
+task.spawn(function()
+	while task.wait() do
+		for i = 0, 1, 0.005 do
+			border.Color = Color3.fromHSV(i, 1, 1)
+			task.wait(0.02)
+		end
+	end
+end)
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.Text = "⚔️ Auto Fram Level | LongDepZai Hub"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 16
+
+-- Giao diện nhập liệu
+local function makeLabel(text, posY)
+	local lbl = Instance.new("TextLabel", frame)
+	lbl.Size = UDim2.new(0, 120, 0, 24)
+	lbl.Position = UDim2.new(0, 10, 0, posY)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = text
+	lbl.TextColor3 = Color3.new(1, 1, 1)
+	lbl.Font = Enum.Font.SourceSans
+	lbl.TextSize = 14
+	return lbl
+end
+
+local function makeBox(default, posY)
+	local box = Instance.new("TextBox", frame)
+	box.Size = UDim2.new(0, 100, 0, 24)
+	box.Position = UDim2.new(0, 130, 0, posY)
+	box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	box.TextColor3 = Color3.new(1, 1, 1)
+	box.Text = tostring(default)
+	box.ClearTextOnFocus = false
+	return box
+end
+
+local function makeButton(text, posY)
+	local btn = Instance.new("TextButton", frame)
+	btn.Size = UDim2.new(0, 70, 0, 24)
+	btn.Position = UDim2.new(0, 240, 0, posY)
+	btn.Text = text
+	btn.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.SourceSansBold
+	btn.TextSize = 14
+	return btn
+end
+
+-- Các ô nhập
+makeLabel("Khoảng cách:", 40)
+local distanceBox = makeBox(10, 40)
+
+makeLabel("Tốc độ quay:", 70)
+local speedBox = makeBox(4, 70)
+
+makeLabel("Độ cao:", 100)
+local heightBox = makeBox(3, 100)
+
+makeLabel("Fram Level:", 130)
+local framButton = makeButton("Tắt", 130)
+
+-- Logic chính
+local enabled = false
+
+local function findTarget(radius)
+	local char = LocalPlayer.Character
+	if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
+	local hrp = char.HumanoidRootPart
+	local best, dist = nil, radius
+
+	for _, obj in pairs(workspace:GetDescendants()) do
+		if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
+			local hum = obj.Humanoid
+			local root = obj.HumanoidRootPart
+			if hum and hum.Health > 0 then
+				local d = (root.Position - hrp.Position).Magnitude
+				if d <= dist and obj ~= char then
+					best = obj
+					dist = d
+				end
+			end
+		end
+	end
+	return best
+end
+
+local function DoAttack(target)
+	if not target then return end
+	local tryNames = {"Hit", "Damage", "DamageEvent", "AttackEvent", "HitEnemy"}
+	for _, name in ipairs(tryNames) do
+		local remote = game.ReplicatedStorage:FindFirstChild(name) or workspace:FindFirstChild(name)
+		if remote and remote:IsA("RemoteEvent") then
+			pcall(function() remote:FireServer(target) end)
+			return
+		end
+	end
+
+	local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+	if tool then pcall(function() tool:Activate() end) end
+end
+
+-- Bay quanh hình tròn (mượt)
+local function orbitSmooth(target, distance, speed, height)
+	local char = LocalPlayer.Character
+	if not char or not target or not target:FindFirstChild("HumanoidRootPart") then return end
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	local targetHrp = target.HumanoidRootPart
+
+	local angle = 0
+	local attackDelay = 1 / 60
+	local lastAttack = tick()
+
+	while enabled and target and target.Parent and target:FindFirstChild("Humanoid") and target.Humanoid.Health > 0 do
+		angle = (angle + speed * 0.05) % (2 * math.pi)
+		local targetPos = targetHrp.Position + Vector3.new(math.cos(angle) * distance, height, math.sin(angle) * distance)
+		
+		-- Di chuyển mượt (không teleport)
+		hrp.Velocity = (targetPos - hrp.Position) * 5 -- mượt hơn
+		hrp.CFrame = CFrame.new(hrp.Position, targetHrp.Position)
+		
+		if tick() - lastAttack >= attackDelay then
+			lastAttack = tick()
+			DoAttack(target)
+		end
+		RunService.Heartbeat:Wait()
+	end
+end
+
+local function framLoop()
+	task.spawn(function()
+		while enabled do
+			local target = findTarget(5)
+			if target then
+				local dist = tonumber(distanceBox.Text) or 10
+				local spd = tonumber(speedBox.Text) or 4
+				local hgt = tonumber(heightBox.Text) or 3
+				orbitSmooth(target, dist, spd, hgt)
+			else
+				task.wait(0.2)
+			end
+		end
+	end)
+end
+
+framButton.MouseButton1Click:Connect(function()
+	enabled = not enabled
+	if enabled then
+		framButton.Text = "Bật"
+		framButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+		framLoop()
+	else
+		framButton.Text = "Tắt"
+		framButton.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+	end
+end)
+
+print("mấy con gà biết gì")
